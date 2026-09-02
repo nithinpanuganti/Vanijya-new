@@ -32,8 +32,10 @@ export class AuthController {
   @Get('captcha')
   @ApiOperation({ summary: 'Generate a new visual alphanumeric CAPTCHA challenge' })
   @ApiResponse({ status: 200, description: 'Visual CAPTCHA challenge generated with base64 SVG image' })
-  getCaptcha(): CaptchaResponse {
-    return this.captchaService.generateCaptcha();
+  getCaptcha(@Req() req: Request): CaptchaResponse {
+    const rawIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || req.ip;
+    const remoteIp = Array.isArray(rawIp) ? rawIp[0] : typeof rawIp === 'string' ? rawIp.split(',')[0].trim() : undefined;
+    return this.captchaService.generateCaptcha(remoteIp);
   }
 
   @Post('register')

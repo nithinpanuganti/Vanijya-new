@@ -83,6 +83,22 @@ export class RegisterDto {
   @IsOptional()
   profilePhotoUrl?: string;
 
+  @ApiProperty({
+    example: 'cpt-17879029910-a1b2',
+    description: 'Server-issued CAPTCHA challenge ID from GET /api/auth/captcha',
+  })
+  @IsString()
+  @IsNotEmpty({ message: 'CAPTCHA is required.' })
+  captchaId: string;
+
+  @ApiProperty({
+    example: 'K7P4X',
+    description: 'User-entered alphanumeric CAPTCHA answer',
+  })
+  @IsString()
+  @IsNotEmpty({ message: 'CAPTCHA answer is required.' })
+  captchaAnswer: string;
+
   // --- Farmer Specific Fields ---
   @ApiPropertyOptional({ example: 'Tomato', description: 'Primary agricultural crop' })
   @IsString()

@@ -414,12 +414,25 @@ export default function AdminRegistrationsPage() {
                       </span>
                     </div>
 
-                    <div className="col-span-2 pt-1 border-t border-amber-200/50">
-                      <span className="text-slate-400 font-bold block text-[10px]">{t.stateDistrictLabel}</span>
+                    <div className="col-span-2 pt-1 border-t border-amber-200/50 flex flex-wrap items-center justify-between gap-1 text-[11px]">
                       <span className="font-semibold text-slate-800">
                         📍 {applicant.village ? `${applicant.village}, ` : ''}{applicant.district}, {applicant.state}
                       </span>
+                      {applicant.liveLocationLat && applicant.liveLocationLng ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-md">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+                          GPS Verified
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-slate-400">GPS Available</span>
+                      )}
                     </div>
+
+                    {applicant.createdAt && (
+                      <div className="col-span-2 text-[10px] text-slate-400 font-medium">
+                        📅 Submitted: {new Date(applicant.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    )}
                   </div>
 
                   {/* Rejection Note if applicable */}

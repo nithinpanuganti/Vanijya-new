@@ -71,3 +71,14 @@ temp/
 *.pid
 *.seed
 *.pid.lock
+
+# User Uploads / Media storage
+uploads/*
+!uploads/.gitkeep
+apps/backend/uploads/*
+!apps/backend/uploads/.gitkeep
+!apps/backend/uploads/profile-photos/
+apps/backend/uploads/profile-photos/*
+!apps/backend/uploads/profile-photos/.gitkeep
+
+

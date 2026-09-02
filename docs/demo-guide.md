@@ -29,7 +29,7 @@ On the unified login page ([`http://localhost:3000/login`](http://localhost:3000
 | **Buyer (व्यापारी)** | FreshCart Agro Ltd. | `9876543220` / `buyer@freshcart.com` | `buyer123` / `Buyer@123` | Navi Mumbai, Maharashtra | 🟢 **Approved (Verified)** |
 | **Buyer (व्यापारी)** | GreenSpire Foods | `9876543221` / `procurement@greenspire.in` | `buyer123` / `Buyer@123` | Azadpur, North Delhi | 🟢 **Approved (Verified)** |
 | **Buyer (व्यापारी)** | AgroPure Commodities | `9876543222` / `procure@agropure.com` | `buyer123` / `Buyer@123` | Bengaluru, Karnataka | 🟡 **Pending (KYC Queue)** |
-| **Admin (व्यवस्थापक)** | Vanijya System Admin | `9876543230` / `admin@vanijya.gov.in` | `admin123` / `Admin@123` | Krishi Bhawan, New Delhi | 🟢 **Approved (Admin Desk)** |
+| **Admin (व्यवस्थापक)** | Vanijya System Admin | `9876543230` / `admin@vanijya.gov.in` | `admin@123` / `Admin@123` | Krishi Bhawan, New Delhi | 🟢 **Approved (Admin Desk)** |
 
 ---
 
@@ -51,7 +51,7 @@ On the unified login page ([`http://localhost:3000/login`](http://localhost:3000
 ---
 
 ### Step 2: Admin Review & One-Click Approval (`/admin/registrations`)
-1. Sign in as **Admin** (`admin@vanijya.gov.in` / `Admin@123` + CAPTCHA).
+1. Sign in as **Admin** (`admin@vanijya.gov.in` / `admin@123` + CAPTCHA).
 2. Open **"Registration Requests"** desk.
 3. Review applicant dossier: live photo, GPS coordinates, KCC/APMC or GSTIN/FSSAI credentials.
 4. Click **[ Approve ]** $\rightarrow$ applicant is approved and verified.

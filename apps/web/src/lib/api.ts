@@ -33,7 +33,11 @@ async function request<T>(endpoint: string, options: RequestInit = {}, isFormDat
       let errorData = null;
       try {
         errorData = await response.json();
-        errorMessage = errorData.message || errorMessage;
+        if (Array.isArray(errorData.message)) {
+          errorMessage = errorData.message.join(', ');
+        } else if (errorData.message) {
+          errorMessage = errorData.message;
+        }
       } catch {
         // Response was not JSON (e.g. 413 Payload Too Large raw HTML/text)
         if (response.status === 413) {

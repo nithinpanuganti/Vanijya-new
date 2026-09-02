@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, HttpException, HttpStatus } from '@nestjs/common';
 import * as crypto from 'crypto';
 
 export interface CaptchaChallenge {
@@ -17,6 +17,11 @@ export interface CaptchaResponse {
   expiresIn: number;
 }
 
+interface CaptchaRateLimitRecord {
+  count: number;
+  resetAt: number;
+}
+
 @Injectable()
 export class CaptchaService implements OnModuleDestroy {
   private readonly logger = new Logger(CaptchaService.name);
@@ -28,6 +33,7 @@ export class CaptchaService implements OnModuleDestroy {
   private readonly MAX_FAILED_ATTEMPTS = 5;
 
   private challenges = new Map<string, CaptchaChallenge>();
+  private rateLimits = new Map<string, CaptchaRateLimitRecord>();
   private cleanupInterval: NodeJS.Timeout;
 
   constructor() {
@@ -42,6 +48,30 @@ export class CaptchaService implements OnModuleDestroy {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
     }
+  }
+
+  /**
+   * Rate limit CAPTCHA generation per client IP (max 30 requests / min).
+   */
+  private checkRateLimit(key: string) {
+    const now = Date.now();
+    const windowMs = 60 * 1000;
+    const maxRequests = 30;
+
+    const record = this.rateLimits.get(key);
+    if (!record || now > record.resetAt) {
+      this.rateLimits.set(key, { count: 1, resetAt: now + windowMs });
+      return;
+    }
+
+    if (record.count >= maxRequests) {
+      throw new HttpException(
+        'Too many CAPTCHA requests. Please wait a moment before trying again.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    record.count++;
   }
 
   /**
@@ -178,9 +208,12 @@ export class CaptchaService implements OnModuleDestroy {
   }
 
   /**
-   * Generate a new server-side CAPTCHA challenge.
+   * Generate a new server-side CAPTCHA challenge with optional IP rate limiting.
    */
-  generateCaptcha(): CaptchaResponse {
+  generateCaptcha(ip?: string): CaptchaResponse {
+    if (ip) {
+      this.checkRateLimit(ip);
+    }
     const code = this.generateRandomCode();
     const captchaId = `cpt-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
     const salt = crypto.randomBytes(16).toString('hex');

@@ -5,12 +5,12 @@
 
 ---
 
-[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen?style=for-the-badge)](https://github.com/nithinpanuganti/Vanijya)
-[![Tests](https://img.shields.io/badge/Tests-83%2F83%20Passing-brightgreen?style=for-the-badge)](https://github.com/nithinpanuganti/Vanijya)
-[![Languages](https://img.shields.io/badge/Languages-English%20%7C%20%E0%A4%B9%E0%A4%BF%E0%A4%82%E0%A4%A6%E0%A4%80%20%7C%20%E0%B0%A4%E0%B1%86%E0%B0%B2%E0%B1%81%E0%B0%97%E0%B1%81-yellow?style=for-the-badge&color=f59e0b)](https://github.com/nithinpanuganti/Vanijya)
-[![Security](https://img.shields.io/badge/CAPTCHA-Visual%20Alphanumeric%20SVG-orange?style=for-the-badge&logo=shield)](https://github.com/nithinpanuganti/Vanijya)
-[![Database](https://img.shields.io/badge/Database-PostgreSQL%20%2B%20Prisma-blue?style=for-the-badge&logo=postgresql)](https://github.com/nithinpanuganti/Vanijya)
-[![Theme](https://img.shields.io/badge/Theme-Golden%20Yellow-amber?style=for-the-badge&color=f59e0b)](https://github.com/nithinpanuganti/Vanijya)
+[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen?style=for-the-badge)](https://github.com/nithinpanuganti/Vanijya-new)
+[![Tests](https://img.shields.io/badge/Tests-97%2F97%20Passing-brightgreen?style=for-the-badge)](https://github.com/nithinpanuganti/Vanijya-new)
+[![Languages](https://img.shields.io/badge/Languages-English%20%7C%20%E0%A4%B9%E0%A4%BF%E0%A4%82%E0%A4%A6%E0%A4%80%20%7C%20%E0%B0%A4%E0%B1%86%E0%B0%B2%E0%B1%81%E0%B0%97%E0%B1%81-yellow?style=for-the-badge&color=f59e0b)](https://github.com/nithinpanuganti/Vanijya-new)
+[![Security](https://img.shields.io/badge/CAPTCHA-Visual%20Alphanumeric%20SVG-orange?style=for-the-badge&logo=shield)](https://github.com/nithinpanuganti/Vanijya-new)
+[![Database](https://img.shields.io/badge/Database-PostgreSQL%20%2B%20Prisma-blue?style=for-the-badge&logo=postgresql)](https://github.com/nithinpanuganti/Vanijya-new)
+[![Theme](https://img.shields.io/badge/Theme-Golden%20Yellow-amber?style=for-the-badge&color=f59e0b)](https://github.com/nithinpanuganti/Vanijya-new)
 
 ---
 
@@ -202,15 +202,17 @@ sequenceDiagram
     API-->>User: Account Verified (Login Unlocked)
 ```
 
-1. **Step 1 — Role Selection:** Select between `🌾 Farmer` and `🏢 Buyer`. Public registration for `ADMIN` is blocked.
-2. **Step 2 — Personal Credentials:** Legal name, 10-digit phone number, email, and password strength meter.
-3. **Step 3 — Location & Agricultural Details:**
-   - Dependent dropdowns for all 36 Indian States and Union Territories.
-   - **Farmers:** Primary crop, farm size in acres, Kisan Credit Card (KCC) number, nearest APMC ID.
-   - **Buyers:** Organization name, contact person, business category, GSTIN, FSSAI food license, warehouse address.
-   - **Live GPS Acquisition:** Interactive button capturing authentic latitude and longitude via browser Geolocation.
-4. **Step 4 — Photo Verification:** Webcam snapshot integration or file upload (`image/jpeg`, `image/png`, max 5MB).
-5. **Step 5 — Review & Security CAPTCHA:** Full dossier summary and alphanumeric security verification.
+1. **Step 1 — Role Selection & Fast-Fill Demo:** Select between `🌾 Farmer` and `🏢 Buyer`. Includes instant 1-click demo autofill buttons (`Fill Demo Farmer`, `Fill Demo Buyer`) for rapid evaluator onboarding. Public registration for `ADMIN` is strictly blocked.
+2. **Step 2 — Personal Credentials:** Legal full name, 10-digit mobile number, email, and interactive password strength meter with confirmation check.
+3. **Step 3 — 4-Tier Location Hierarchy & Agricultural Details:**
+   - **Dependent Searchable Selects:** Real data cascading across all 36 Indian States & UTs: **State $\rightarrow$ District $\rightarrow$ Tehsil / Taluka / Mandal $\rightarrow$ Village / Town**.
+   - **High-Precision GPS Acquisition:** Live browser geolocation with latitude/longitude accuracy validation and coordinate display.
+   - **Farmer Specifics:** Primary crop, secondary crops, farm size (in acres), irrigation type (Rainfed, Borewell, Canal, Drip), Kisan Credit Card (KCC) identifier, and nearest APMC Mandi ID.
+   - **Buyer Specifics:** Organization name, contact person designation, business category (Wholesaler, Food Processor, Exporter, Retailer, FPO), GSTIN (15-digit), FSSAI license (14-digit), and warehouse storage capacity.
+4. **Step 4 — Smart Photo Verification & Client Compression:**
+   - **Dual Capture Mode:** Live webcam selfie capture with camera preview or local photo upload (`image/jpeg`, `image/png`, `image/webp`).
+   - **Client-Side Canvas Compression:** Integrated HTML5 Canvas image compressor automatically resizes images to max 1200px width/height and compresses to 82% quality JPEG/WebP (<1MB payload), ensuring lightning-fast uploads over 2G/3G rural cellular networks.
+5. **Step 5 — Review Dossier & Visual Alphanumeric CAPTCHA:** Complete application summary review, profile completion score meter (0–100%), and distorted alphanumeric SVG CAPTCHA verification.
 
 ---
 
@@ -408,8 +410,8 @@ Vanijya/
 ### Step 1: Clone and Install Dependencies
 ```powershell
 # Clone the repository
-git clone https://github.com/nithinpanuganti/Vanijya.git
-cd Vanijya
+git clone https://github.com/nithinpanuganti/Vanijya-new.git
+cd Vanijya-new
 
 # Install all monorepo workspace dependencies
 npm.cmd install
@@ -437,7 +439,7 @@ npm.cmd run prisma:seed
 
 ### Step 4: Run Automated Test Suites
 ```powershell
-# Run all 83 unit and integration tests across monorepo packages
+# Run all 97 unit and integration tests across monorepo packages
 npm.cmd test
 ```
 
@@ -481,7 +483,7 @@ Vanijya comes pre-seeded with realistic agricultural personas across India repre
 ### 3. 🏛️ System Administrator Accounts
 | Administrator Name | Phone / Login | Official Email | Password | Office Location | Designation | System Capabilities |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Vanijya System Admin** | `9876543230` | `admin@vanijya.gov.in` | `admin123` / `Admin@123` | Krishi Bhawan, New Delhi | National Governance Desk | Approve/Reject KYC dossiers, monitor real-time trade GMV, oversee Agmarknet pricing feeds, audit bid logs |
+| **Vanijya System Admin** | `9876543230` | `admin@vanijya.gov.in` | `admin@123` / `Admin@123` | Krishi Bhawan, New Delhi | National Governance Desk | Approve/Reject KYC dossiers, monitor real-time trade GMV, oversee Agmarknet pricing feeds, audit bid logs |
 
 ---
 
@@ -489,7 +491,7 @@ Vanijya comes pre-seeded with realistic agricultural personas across India repre
 The unified login page (`/login`) includes **1-Click Fast-Fill Buttons** for:
 - 🌾 **Farmer Demo:** Autofills `9876543210` / `farmer123`
 - 🏢 **Buyer Demo:** Autofills `9876543220` / `buyer123`
-- 🏛️ **Admin Demo:** Autofills `admin@vanijya.gov.in` / `admin123`
+- 🏛️ **Admin Demo:** Autofills `admin@vanijya.gov.in` / `admin@123`
 
 ---
 

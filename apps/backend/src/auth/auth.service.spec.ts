@@ -129,6 +129,8 @@ describe('AuthService', () => {
           village: 'Pimpalgaon',
           latitude: 20.1704,
           longitude: 73.9877,
+          captchaId: 'valid-captcha-id',
+          captchaAnswer: 'K7P4X',
         },
         mockFile,
       );
@@ -154,6 +156,8 @@ describe('AuthService', () => {
           latitude: 20.1704,
           longitude: 73.9877,
           profilePhotoUrl: '/api/uploads/profile-photos/photo-1.jpg',
+          captchaId: 'valid-captcha-id',
+          captchaAnswer: 'K7P4X',
         }),
       ).rejects.toThrow(BadRequestException);
     });
@@ -170,6 +174,8 @@ describe('AuthService', () => {
           latitude: 20.1704,
           longitude: 73.9877,
           profilePhotoUrl: '/api/uploads/profile-photos/photo-1.jpg',
+          captchaId: 'valid-captcha-id',
+          captchaAnswer: 'K7P4X',
         }),
       ).rejects.toThrow(BadRequestException);
     });
@@ -186,6 +192,8 @@ describe('AuthService', () => {
           latitude: 20.1704,
           longitude: 73.9877,
           profilePhotoUrl: '/api/uploads/profile-photos/photo-1.jpg',
+          captchaId: 'valid-captcha-id',
+          captchaAnswer: 'K7P4X',
         }),
       ).rejects.toThrow(BadRequestException);
     });
@@ -201,6 +209,8 @@ describe('AuthService', () => {
           state: 'Maharashtra',
           latitude: 20.1704,
           longitude: 73.9877,
+          captchaId: 'valid-captcha-id',
+          captchaAnswer: 'K7P4X',
         }),
       ).rejects.toThrow(BadRequestException);
     });
@@ -223,6 +233,8 @@ describe('AuthService', () => {
             state: 'Maharashtra',
             latitude: 20.1704,
             longitude: 73.9877,
+            captchaId: 'valid-captcha-id',
+            captchaAnswer: 'K7P4X',
           },
           oversizedFile,
         ),
@@ -247,10 +259,48 @@ describe('AuthService', () => {
             state: 'Maharashtra',
             latitude: 20.1704,
             longitude: 73.9877,
+            captchaId: 'valid-captcha-id',
+            captchaAnswer: 'K7P4X',
           },
           unsupportedFile,
         ),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('8. should reject registration when CAPTCHA is missing', async () => {
+      await expect(
+        service.register({
+          name: 'Ramesh Patel',
+          email: 'ramesh@farmer.in',
+          password: 'Password@123',
+          role: Role.FARMER,
+          district: 'Nashik',
+          state: 'Maharashtra',
+          latitude: 20.1704,
+          longitude: 73.9877,
+          profilePhotoUrl: '/api/uploads/profile-photos/photo-1.jpg',
+          captchaId: '',
+          captchaAnswer: '',
+        }),
+      ).rejects.toThrow('Please enter the CAPTCHA.');
+    });
+
+    it('9. should reject registration when CAPTCHA is incorrect', async () => {
+      await expect(
+        service.register({
+          name: 'Ramesh Patel',
+          email: 'ramesh@farmer.in',
+          password: 'Password@123',
+          role: Role.FARMER,
+          district: 'Nashik',
+          state: 'Maharashtra',
+          latitude: 20.1704,
+          longitude: 73.9877,
+          profilePhotoUrl: '/api/uploads/profile-photos/photo-1.jpg',
+          captchaId: 'valid-captcha-id',
+          captchaAnswer: 'WRONG_ANSWER',
+        }),
+      ).rejects.toThrow('Incorrect CAPTCHA. Please try again.');
     });
   });
 

@@ -183,6 +183,8 @@ describe('Comprehensive Farmer & Buyer Registration & Admin Approval Suite (27+ 
         primaryCrop: 'Chilli',
         farmSize: 5.5,
         kccNumber: 'KCC-AP-2024-001',
+        captchaId: 'valid-captcha-id',
+        captchaAnswer: 'K7P4X',
       });
 
       expect(res.message).toContain('submitted successfully');
@@ -210,6 +212,8 @@ describe('Comprehensive Farmer & Buyer Registration & Admin Approval Suite (27+ 
         businessType: 'WHOLESALER',
         gstin: '36AABCA1234A1Z5',
         fssaiNumber: '13621018000111',
+        captchaId: 'valid-captcha-id',
+        captchaAnswer: 'K7P4X',
       });
 
       expect(res.message).toContain('submitted successfully');
@@ -231,6 +235,8 @@ describe('Comprehensive Farmer & Buyer Registration & Admin Approval Suite (27+ 
           latitude: 28.61,
           longitude: 77.2,
           profilePhotoUrl: '/api/uploads/profile-photos/hacker.jpg',
+          captchaId: 'valid-captcha-id',
+          captchaAnswer: 'K7P4X',
         }),
       ).rejects.toThrow(BadRequestException);
     });
@@ -247,6 +253,8 @@ describe('Comprehensive Farmer & Buyer Registration & Admin Approval Suite (27+ 
           latitude: 16.2437,
           longitude: 80.64,
           profilePhotoUrl: '/api/uploads/profile-photos/photo.jpg',
+          captchaId: 'valid-captcha-id',
+          captchaAnswer: 'K7P4X',
         }),
       ).rejects.toThrow('An account with this mobile number already exists.');
     });
@@ -264,6 +272,8 @@ describe('Comprehensive Farmer & Buyer Registration & Admin Approval Suite (27+ 
           latitude: 17.41,
           longitude: 78.44,
           profilePhotoUrl: '/api/uploads/profile-photos/photo.jpg',
+          captchaId: 'valid-captcha-id',
+          captchaAnswer: 'K7P4X',
         }),
       ).rejects.toThrow('An account with this email already exists.');
     });
@@ -280,6 +290,8 @@ describe('Comprehensive Farmer & Buyer Registration & Admin Approval Suite (27+ 
           latitude: 16.24,
           longitude: 80.64,
           profilePhotoUrl: '/api/uploads/profile-photos/photo.jpg',
+          captchaId: 'valid-captcha-id',
+          captchaAnswer: 'K7P4X',
         }),
       ).rejects.toThrow(BadRequestException);
     });
@@ -296,6 +308,8 @@ describe('Comprehensive Farmer & Buyer Registration & Admin Approval Suite (27+ 
           latitude: 16.24,
           longitude: 80.64,
           profilePhotoUrl: '/api/uploads/profile-photos/photo.jpg',
+          captchaId: 'valid-captcha-id',
+          captchaAnswer: 'K7P4X',
         }),
       ).rejects.toThrow(BadRequestException);
     });
@@ -312,6 +326,8 @@ describe('Comprehensive Farmer & Buyer Registration & Admin Approval Suite (27+ 
           latitude: 16.24,
           longitude: 80.64,
           profilePhotoUrl: '',
+          captchaId: 'valid-captcha-id',
+          captchaAnswer: 'K7P4X',
         }),
       ).rejects.toThrow(BadRequestException);
     });
@@ -328,6 +344,8 @@ describe('Comprehensive Farmer & Buyer Registration & Admin Approval Suite (27+ 
           latitude: undefined as any,
           longitude: undefined as any,
           profilePhotoUrl: '/api/uploads/profile-photos/photo.jpg',
+          captchaId: 'valid-captcha-id',
+          captchaAnswer: 'K7P4X',
         }),
       ).rejects.toThrow(BadRequestException);
     });
@@ -525,6 +543,8 @@ describe('Comprehensive Farmer & Buyer Registration & Admin Approval Suite (27+ 
           district: 'Nashik',
           latitude: 20.0,
           longitude: 73.8,
+          captchaId: 'valid-captcha-id',
+          captchaAnswer: 'K7P4X',
         },
         jpgFile,
       );
@@ -552,6 +572,8 @@ describe('Comprehensive Farmer & Buyer Registration & Admin Approval Suite (27+ 
           district: 'Guntur',
           latitude: 16.3,
           longitude: 80.4,
+          captchaId: 'valid-captcha-id',
+          captchaAnswer: 'K7P4X',
         },
         pngFile,
       );
@@ -581,6 +603,8 @@ describe('Comprehensive Farmer & Buyer Registration & Admin Approval Suite (27+ 
           district: 'New Delhi',
           latitude: 28.6,
           longitude: 77.2,
+          captchaId: 'valid-captcha-id',
+          captchaAnswer: 'K7P4X',
         },
         webpFile,
       );
@@ -608,6 +632,8 @@ describe('Comprehensive Farmer & Buyer Registration & Admin Approval Suite (27+ 
             district: 'Nashik',
             latitude: 20.0,
             longitude: 73.8,
+            captchaId: 'valid-captcha-id',
+            captchaAnswer: 'K7P4X',
           },
           oversizedFile,
         ),
@@ -633,6 +659,8 @@ describe('Comprehensive Farmer & Buyer Registration & Admin Approval Suite (27+ 
             district: 'Nashik',
             latitude: 20.0,
             longitude: 73.8,
+            captchaId: 'valid-captcha-id',
+            captchaAnswer: 'K7P4X',
           },
           badFile,
         ),
@@ -659,6 +687,8 @@ describe('Comprehensive Farmer & Buyer Registration & Admin Approval Suite (27+ 
           latitude: 19.99,
           longitude: 73.78,
           primaryCrop: 'Grapes',
+          captchaId: 'valid-captcha-id',
+          captchaAnswer: 'K7P4X',
         },
         jpgFile,
       );
@@ -715,6 +745,8 @@ describe('Comprehensive Farmer & Buyer Registration & Admin Approval Suite (27+ 
           district: 'New Delhi',
           latitude: 28.6,
           longitude: 77.2,
+          captchaId: 'valid-captcha-id',
+          captchaAnswer: 'K7P4X',
         },
         jpgFile,
       );

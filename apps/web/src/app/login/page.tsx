@@ -54,7 +54,7 @@ function LoginContent() {
       setPassword('buyer123');
     } else if (role === 'ADMIN') {
       setPhoneOrEmail('admin@vanijya.gov.in');
-      setPassword('admin123');
+      setPassword('admin@123');
     }
     setErrorMessage(null);
   };

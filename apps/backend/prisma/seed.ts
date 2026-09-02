@@ -34,7 +34,7 @@ async function main() {
   const saltRounds = 10;
   const farmerPassword = await bcrypt.hash('farmer123', saltRounds);
   const buyerPassword = await bcrypt.hash('buyer123', saltRounds);
-  const adminPassword = await bcrypt.hash('admin123', saltRounds);
+  const adminPassword = await bcrypt.hash('admin@123', saltRounds);
 
   // 2. Seed Users
   // 2.1 Farmer Accounts (Approved & Pending)

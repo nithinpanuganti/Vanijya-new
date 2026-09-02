@@ -22,14 +22,16 @@ export class UploadsService {
       throw new BadRequestException('Profile photo file is required.');
     }
 
-    const allowedMime = ['image/jpeg', 'image/png', 'image/webp'];
+    const allowedMime = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     const mimeType = (file.mimetype || '').toLowerCase();
     if (!allowedMime.includes(mimeType)) {
-      throw new BadRequestException('Invalid image format. Only JPG, PNG, and WebP are allowed.');
+      throw new BadRequestException(
+        'Invalid image format. Only JPG, PNG, and WebP are allowed. PDF, ZIP, and other file types are rejected.',
+      );
     }
 
     // Max 5 MB limit
-    if (file.size > 5 * 1024 * 1024 || file.buffer.length > 5 * 1024 * 1024) {
+    if (file.size > 5 * 1024 * 1024 || (file.buffer && file.buffer.length > 5 * 1024 * 1024)) {
       throw new BadRequestException('Profile photo exceeds the 5 MB size limit.');
     }
 
@@ -37,7 +39,7 @@ export class UploadsService {
     if (mimeType.includes('png')) ext = '.png';
     else if (mimeType.includes('webp')) ext = '.webp';
 
-    const filename = `photo-${Date.now()}-${randomUUID()}${ext}`;
+    const filename = `photo-${Date.now()}-${randomUUID().slice(0, 8)}${ext}`;
     const filePath = path.join(this.uploadDir, filename);
 
     await fs.promises.writeFile(filePath, file.buffer);
