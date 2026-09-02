@@ -7,10 +7,11 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces",
+    "build": "npm run build:packages && npm run build:backend && npm run build:web",
     "build:packages": "npm run build --workspace=packages/shared-types --workspace=packages/shared-utils",
     "build:backend": "npm run build --workspace=apps/backend",
     "build:web": "npm run build --workspace=apps/web",
+    "test": "npm run test --workspace=apps/backend",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "clean": "npm run clean --workspaces --if-present"

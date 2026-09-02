@@ -28,7 +28,7 @@ export default function BuyerLotDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
-  const { t } = useLanguage();
+  const { t, tCrop } = useLanguage();
   const { showToast } = useToast();
 
   const [lot, setLot] = useState<any>(null);
@@ -56,13 +56,13 @@ export default function BuyerLotDetailPage() {
   const handlePlaceBid = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAuthenticated) {
-      showToast('Please sign in as a buyer to place a bid', 'info');
+      showToast(t.buyerLoginRequiredDesc, 'info');
       router.push('/login');
       return;
     }
 
     if (user?.role === 'FARMER') {
-      showToast('You are signed in as a farmer. Only buyers can place purchase bids.', 'error');
+      showToast(t.msgFarmerOnlyAccess, 'error');
       return;
     }
 
@@ -74,10 +74,10 @@ export default function BuyerLotDetailPage() {
         message: bidMessage,
       });
 
-      showToast('Bid offer submitted directly to the farmer!', 'success');
+      showToast(t.msgBidPlacedSuccess, 'success');
       router.push('/my-bids');
     } catch (err: any) {
-      showToast(err.message || 'Failed to place bid', 'error');
+      showToast(err.message || t.msgLoginFailed, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -95,9 +95,9 @@ export default function BuyerLotDetailPage() {
   if (!lot) {
     return (
       <div className="bg-white p-8 rounded-3xl border border-amber-200 text-center space-y-4">
-        <h2 className="text-xl font-black text-slate-900">Crop Lot Not Found</h2>
+        <h2 className="text-xl font-black text-slate-900">{t.lotNotFoundTitle}</h2>
         <Link href="/browse-lots" className="inline-block text-xs font-bold text-amber-800 hover:underline">
-          ← Return to Marketplace
+          {t.returnToMarketplace}
         </Link>
       </div>
     );
@@ -106,7 +106,7 @@ export default function BuyerLotDetailPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-300">
       <Link href="/browse-lots" className="inline-flex items-center gap-1 text-xs text-amber-800 font-bold hover:underline">
-        <ArrowLeft className="w-3.5 h-3.5" /> Back to Marketplace
+        <ArrowLeft className="w-3.5 h-3.5" /> {t.backToMarketplace}
       </Link>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -116,10 +116,10 @@ export default function BuyerLotDetailPage() {
             <div className="flex items-center justify-between border-b border-amber-100 pb-4">
               <div>
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">
-                  Lot #{lot.id?.substring(0, 8)}
+                  {t.contractNumberLabel} #{lot.id?.substring(0, 8)}
                 </span>
                 <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-                  {lot.crop?.name || 'Crop'} ({lot.quantity} {lot.unit || 'Quintals'})
+                  {tCrop(lot.crop?.name) || lot.crop?.name || 'Crop'} ({lot.quantity} {lot.unit === 'QUINTAL' || !lot.unit ? t.commonQuintal : lot.unit === 'KG' ? t.commonKg : lot.unit === 'TONNE' ? t.commonTonne : lot.unit})
                 </h1>
               </div>
               <StatusBadge status={lot.status} />
@@ -127,18 +127,20 @@ export default function BuyerLotDetailPage() {
 
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="bg-amber-50/50 p-3 rounded-2xl border border-amber-100">
-                <span className="text-slate-400 font-bold block text-[10px]">Farmer Expected Rate</span>
-                <span className="font-black text-slate-900 text-sm">₹{lot.expectedPrice}/Qtl</span>
+                <span className="text-slate-400 font-bold block text-[10px]">{t.expectedRateLabel}</span>
+                <span className="font-black text-slate-900 text-sm">₹{lot.expectedPrice}/{t.commonQuintal}</span>
               </div>
               <div className="bg-amber-50/50 p-3 rounded-2xl border border-amber-100">
-                <span className="text-slate-400 font-bold block text-[10px]">Quality Grade</span>
-                <span className="font-black text-amber-800 text-sm">{lot.qualityGrade || 'GRADE_A'}</span>
+                <span className="text-slate-400 font-bold block text-[10px]">{t.qualityGradeLabel}</span>
+                <span className="font-black text-amber-800 text-sm">
+                  {lot.qualityGrade === 'GRADE_A' ? t.commonGradeA : lot.qualityGrade === 'GRADE_B' ? t.commonGradeB : lot.qualityGrade === 'GRADE_C' ? t.commonGradeC : (lot.qualityGrade || t.commonGradeA)}
+                </span>
               </div>
             </div>
 
             <div className="flex items-center gap-2 text-xs text-slate-600 pt-2 border-t border-amber-100">
               <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-              <span>Farm Pickup Location: <strong>{lot.location || 'Nashik Farm Gate'}</strong></span>
+              <span>{t.farmPickupLocationLabel}: <strong>{lot.location || 'Nashik Farm Gate'}</strong></span>
             </div>
           </div>
         </div>
@@ -148,13 +150,13 @@ export default function BuyerLotDetailPage() {
           <div className="bg-white p-6 rounded-3xl border border-amber-200 shadow-md space-y-4">
             <div className="flex items-center gap-2 border-b border-amber-100 pb-3">
               <Gavel className="w-5 h-5 text-amber-600" />
-              <h2 className="text-lg font-black text-slate-900">Bidding Desk</h2>
+              <h2 className="text-lg font-black text-slate-900">{t.biddingDeskTitle}</h2>
             </div>
 
             <form onSubmit={handlePlaceBid} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Your Bid Price per Quintal (₹/Qtl)
+                  {t.yourBidPriceLabel}
                 </label>
                 <input
                   type="number"
@@ -168,7 +170,7 @@ export default function BuyerLotDetailPage() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Sourcing Quantity (Quintals)
+                  {t.sourcingQuantityLabel}
                 </label>
                 <input
                   type="number"
@@ -180,12 +182,12 @@ export default function BuyerLotDetailPage() {
                   className="w-full px-3.5 py-2.5 bg-amber-50/40 border border-amber-200 rounded-xl text-base font-black focus:bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
                 <span className="text-[10px] text-slate-400 mt-1 block">
-                  Max available: {lot.quantity} {lot.unit || 'Qtl'}
+                  {t.maxAvailableLabel}: {lot.quantity} {lot.unit === 'QUINTAL' || !lot.unit ? t.commonQuintal : lot.unit === 'KG' ? t.commonKg : lot.unit === 'TONNE' ? t.commonTonne : lot.unit}
                 </span>
               </div>
 
               <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs">
-                <span className="text-slate-500 block text-[10px] font-bold">Total Bid Sourcing Value</span>
+                <span className="text-slate-500 block text-[10px] font-bold">{t.totalBidSourcingValueLabel}</span>
                 <span className="text-base font-black text-slate-900">
                   {formatINR((parseFloat(bidPrice || '0') * parseFloat(bidQuantity || '0')))}
                 </span>
@@ -194,17 +196,17 @@ export default function BuyerLotDetailPage() {
               <button
                 type="submit"
                 disabled={isSubmitting || lot.status === 'SOLD' || lot.status === 'CANCELLED'}
-                className="w-full bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black py-3.5 rounded-2xl text-xs shadow-md shadow-amber-500/20 transition transform active:scale-95 flex items-center justify-center gap-1.5"
+                className="w-full bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black py-3.5 rounded-2xl text-xs shadow-md shadow-amber-500/20 transition transform active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Submitting Offer...
+                    {t.submittingOffer}
                   </>
                 ) : lot.status === 'SOLD' ? (
-                  'Lot Already Sold'
+                  t.lotAlreadySold
                 ) : (
-                  'Confirm & Submit Bid'
+                  t.confirmAndSubmitBid
                 )}
               </button>
             </form>

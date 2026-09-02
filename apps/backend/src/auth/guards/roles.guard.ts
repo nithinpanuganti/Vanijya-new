@@ -29,6 +29,9 @@ export class RolesGuard implements CanActivate {
 
     const hasRole = requiredRoles.some((role) => user.role === role);
     if (!hasRole) {
+      if (requiredRoles.includes(Role.FARMER) && user.role === Role.BUYER) {
+        throw new ForbiddenException('Only approved farmers can publish crop lots.');
+      }
       throw new ForbiddenException(`Access denied. Requires one of roles: [${requiredRoles.join(', ')}]`);
     }
 

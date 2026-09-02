@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useLanguage } from '../../lib/language-context';
 
 interface PricePoint {
   date: string;
@@ -14,10 +15,13 @@ interface PriceChartProps {
 }
 
 export function PriceChart({ data, cropName }: PriceChartProps) {
+  const { t, tCrop } = useLanguage();
+  const localizedCrop = tCrop(cropName) || cropName;
+
   if (!data || data.length === 0) {
     return (
       <div className="h-44 flex items-center justify-center bg-amber-50/50 rounded-2xl border border-dashed border-amber-200 text-xs text-amber-600">
-        No price history points available for {cropName}
+        {t.noPriceHistory} {localizedCrop}
       </div>
     );
   }
@@ -48,10 +52,10 @@ export function PriceChart({ data, cropName }: PriceChartProps) {
       <div className="flex items-center justify-between">
         <span className="text-xs font-black text-slate-900 tracking-tight flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-          7-Day Mandi Price Trend ({cropName})
+          {t.mandiPriceTrendTitle} ({localizedCrop})
         </span>
         <span className="text-[11px] font-black text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full">
-          Latest: ₹{data[data.length - 1]?.modalPrice?.toLocaleString('en-IN')}/Qtl
+          {t.latestPriceLabel}: ₹{data[data.length - 1]?.modalPrice?.toLocaleString('en-IN')}/{t.commonQuintal}
         </span>
       </div>
 

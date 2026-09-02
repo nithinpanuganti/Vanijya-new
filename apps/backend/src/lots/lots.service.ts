@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCropLotDto, UpdateCropLotDto, QueryLotsDto } from './dto/create-lot.dto';
-import { CropLotStatus, Role, AuditAction } from '@prisma/client';
+import { CropLotStatus, Role, AuditAction, QualityGrade, ApprovalStatus, VerificationStatus } from '@prisma/client';
 import { FALLBACK_CROPS } from '../crops/crops.service';
 import { AuditService } from '../audit/audit.service';
+import { findInMemoryUserById, getAllInMemoryUsers } from '../auth/fallback-users';
 
 export const FALLBACK_LOTS: any[] = [
   {
@@ -137,102 +138,174 @@ export class LotsService {
     };
   }
 
-  async create(farmerId: string, dto: CreateCropLotDto) {
-    if (!this.prisma.isConnected) {
-      const crop =
+  async create(farmerId: string, dto: CreateCropLotDto, userContext?: any) {
+    // 1. Resolve Farmer Identity
+    let farmerUser: any = userContext;
+    if (!farmerUser && this.prisma.isConnected) {
+      try {
+        farmerUser = await this.prisma.user.findUnique({ where: { id: farmerId } });
+      } catch {
+        farmerUser = null;
+      }
+    }
+    if (!farmerUser) {
+      farmerUser = findInMemoryUserById(farmerId) || getAllInMemoryUsers().find((u) => u.id === farmerId);
+    }
+
+    if (!farmerUser) {
+      throw new NotFoundException('Farmer account not found.');
+    }
+
+    // Role check
+    if (farmerUser.role !== Role.FARMER && farmerUser.role !== Role.ADMIN) {
+      throw new ForbiddenException('Only approved farmers can publish crop lots.');
+    }
+
+    // Approval status check
+    if (farmerUser.approvalStatus === ApprovalStatus.PENDING) {
+      throw new ForbiddenException('Your farmer account is awaiting admin approval.');
+    }
+    if (farmerUser.approvalStatus === ApprovalStatus.REJECTED) {
+      throw new ForbiddenException('Your farmer registration was not approved.');
+    }
+
+    // 2. Resolve Crop
+    let crop: any = null;
+    if (this.prisma.isConnected) {
+      try {
+        crop = await this.prisma.crop.findUnique({ where: { id: dto.cropId } });
+        if (!crop) {
+          crop = await this.prisma.crop.findFirst({
+            where: { name: { equals: dto.cropId, mode: 'insensitive' } },
+          });
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    if (!crop) {
+      crop =
         FALLBACK_CROPS.find(
           (c) =>
             c.id === dto.cropId ||
-            c.name.toLowerCase() === (dto.cropId || '').toLowerCase()
+            c.name.toLowerCase() === (dto.cropId || '').toLowerCase(),
         ) || FALLBACK_CROPS[0];
-
-      const newLot = {
-        id: `lot-${Date.now()}`,
-        farmerId,
-        cropId: crop.id,
-        quantity: Number(dto.quantity),
-        unit: dto.unit || 'QUINTAL',
-        expectedPrice: Number(dto.expectedPrice),
-        qualityGrade: dto.qualityGrade || 'GRADE_A',
-        location: dto.location || 'Pimpalgaon Farm Gate, Niphad, Nashik',
-        harvestDate: dto.harvestDate ? new Date(dto.harvestDate) : new Date(),
-        status: CropLotStatus.OPEN,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        crop,
-        farmer: {
-          id: farmerId,
-          name: 'Ramesh Patel',
-          phone: '9876543210',
-          district: 'Nashik',
-          state: 'Maharashtra',
-          isVerified: true,
-        },
-        bids: [],
-        _count: { bids: 0 },
-      };
-
-      FALLBACK_LOTS.unshift(newLot);
-
-      await this.auditService.log({
-        actorId: farmerId,
-        action: AuditAction.LOT_CREATED,
-        lotId: newLot.id,
-        price: newLot.expectedPrice,
-        newQuantity: newLot.quantity,
-        metadata: { cropName: crop.name, location: newLot.location },
-      });
-
-      return this.enrichLot(newLot);
     }
 
-    try {
-      const crop = await this.prisma.crop.findUnique({ where: { id: dto.cropId } });
-      if (!crop) {
-        throw new NotFoundException(`Crop with ID ${dto.cropId} does not exist.`);
-      }
+    // 3. If Prisma is connected, ensure farmer exists in Prisma DB for FK relation, then create
+    if (this.prisma.isConnected && crop) {
+      try {
+        const dbFarmer = await this.prisma.user.findUnique({ where: { id: farmerId } });
+        if (!dbFarmer) {
+          // Sync in-memory farmer to DB to satisfy FK constraint
+          await this.prisma.user.create({
+            data: {
+              id: farmerUser.id,
+              name: farmerUser.name,
+              phone: farmerUser.phone,
+              email: farmerUser.email,
+              passwordHash: farmerUser.passwordHash || 'mock-hash',
+              role: farmerUser.role,
+              district: farmerUser.district,
+              state: farmerUser.state,
+              village: farmerUser.village,
+              location: farmerUser.location,
+              latitude: farmerUser.latitude,
+              longitude: farmerUser.longitude,
+              profilePhotoUrl: farmerUser.profilePhotoUrl,
+              approvalStatus: farmerUser.approvalStatus || ApprovalStatus.APPROVED,
+              verificationStatus: farmerUser.verificationStatus || VerificationStatus.VERIFIED,
+              isVerified: farmerUser.isVerified ?? true,
+              primaryCrop: farmerUser.primaryCrop,
+              farmSize: farmerUser.farmSize,
+              kccNumber: farmerUser.kccNumber,
+              apmcNumber: farmerUser.apmcNumber,
+            },
+          }).catch(() => {});
+        }
 
-      const created = await this.prisma.cropLot.create({
-        data: {
-          farmerId,
-          cropId: dto.cropId,
-          quantity: dto.quantity,
-          unit: dto.unit || 'QUINTAL',
-          expectedPrice: dto.expectedPrice,
-          qualityGrade: dto.qualityGrade,
-          location: dto.location,
-          harvestDate: dto.harvestDate ? new Date(dto.harvestDate) : new Date(),
-          status: CropLotStatus.OPEN,
-        },
-        include: {
-          crop: true,
-          farmer: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-              district: true,
-              state: true,
-              isVerified: true,
+        const created = await this.prisma.cropLot.create({
+          data: {
+            farmerId: farmerUser.id,
+            cropId: crop.id,
+            quantity: Number(dto.quantity),
+            unit: dto.unit || 'QUINTAL',
+            expectedPrice: Number(dto.expectedPrice),
+            qualityGrade: dto.qualityGrade || QualityGrade.GRADE_A,
+            location: dto.location || farmerUser.location || `${farmerUser.district}, ${farmerUser.state}`,
+            harvestDate: dto.harvestDate ? new Date(dto.harvestDate) : new Date(),
+            status: CropLotStatus.OPEN,
+          },
+          include: {
+            crop: true,
+            farmer: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+                district: true,
+                state: true,
+                isVerified: true,
+              },
             },
           },
-        },
-      });
+        });
 
-      await this.auditService.log({
-        actorId: farmerId,
-        action: AuditAction.LOT_CREATED,
-        lotId: created.id,
-        price: created.expectedPrice,
-        newQuantity: created.quantity,
-        metadata: { cropName: crop.name, location: created.location },
-      });
+        await this.auditService.log({
+          actorId: farmerUser.id,
+          action: AuditAction.LOT_CREATED,
+          lotId: created.id,
+          price: created.expectedPrice,
+          newQuantity: created.quantity,
+          metadata: { cropName: crop.name, location: created.location },
+        });
 
-      return this.enrichLot(created);
-    } catch (err) {
-      if (err instanceof NotFoundException) throw err;
-      return this.create(farmerId, dto);
+        return this.enrichLot(created);
+      } catch (err: any) {
+        if (err instanceof NotFoundException || err instanceof ForbiddenException) throw err;
+        // Fall through to in-memory lot creation on DB error
+      }
     }
+
+    // 4. In-Memory / Fallback Creation
+    const newLot = {
+      id: `lot-${Date.now()}`,
+      farmerId: farmerUser.id,
+      cropId: crop.id,
+      quantity: Number(dto.quantity),
+      unit: dto.unit || 'QUINTAL',
+      expectedPrice: Number(dto.expectedPrice),
+      qualityGrade: dto.qualityGrade || QualityGrade.GRADE_A,
+      location: dto.location || farmerUser.location || `${farmerUser.district || 'Nashik'}, ${farmerUser.state || 'Maharashtra'}`,
+      harvestDate: dto.harvestDate ? new Date(dto.harvestDate) : new Date(),
+      status: CropLotStatus.OPEN,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      crop,
+      farmer: {
+        id: farmerUser.id,
+        name: farmerUser.name,
+        phone: farmerUser.phone || '9876543210',
+        district: farmerUser.district || 'Nashik',
+        state: farmerUser.state || 'Maharashtra',
+        isVerified: farmerUser.isVerified ?? true,
+      },
+      bids: [],
+      _count: { bids: 0 },
+    };
+
+    FALLBACK_LOTS.unshift(newLot);
+
+    await this.auditService.log({
+      actorId: farmerUser.id,
+      action: AuditAction.LOT_CREATED,
+      lotId: newLot.id,
+      price: newLot.expectedPrice,
+      newQuantity: newLot.quantity,
+      metadata: { cropName: crop.name, location: newLot.location },
+    });
+
+    return this.enrichLot(newLot);
   }
 
   async findAll(query: QueryLotsDto) {

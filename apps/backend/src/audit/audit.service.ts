@@ -1,13 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditAction, Role } from '@prisma/client';
-import { FALLBACK_USERS } from '../auth/auth.service';
+import { FALLBACK_USERS } from '../auth/fallback-users';
 
 export interface AuditEntry {
   id?: string;
   bidId?: string;
   lotId?: string;
   actorId: string;
+  targetUserId?: string;
   action: AuditAction;
   oldQuantity?: number;
   newQuantity?: number;
@@ -67,6 +68,7 @@ export class AuditService {
         await this.prisma.auditLog.create({
           data: {
             actorId: entry.actorId,
+            targetUserId: entry.targetUserId,
             action: entry.action,
             bidId: entry.bidId,
             lotId: entry.lotId,
@@ -99,6 +101,9 @@ export class AuditService {
           actor: {
             select: { id: true, name: true, role: true, district: true },
           },
+          targetUser: {
+            select: { id: true, name: true, role: true },
+          },
           lot: {
             include: { crop: true },
           },
@@ -111,6 +116,8 @@ export class AuditService {
         actorId: l.actorId,
         actorName: l.actor?.name || 'User',
         actorRole: l.actor?.role || 'FARMER',
+        targetUserId: l.targetUserId,
+        targetUserName: l.targetUser?.name,
         action: l.action,
         lotId: l.lotId,
         bidId: l.bidId,

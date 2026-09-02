@@ -23,7 +23,7 @@ import {
 
 export default function PublicPricesPage() {
   const { isAuthenticated, user } = useAuth();
-  const { t } = useLanguage();
+  const { t, tCrop } = useLanguage();
 
   const [selectedCrop, setSelectedCrop] = useState('Tomato');
   const [crops, setCrops] = useState<{ id: string; name: string; category?: string }[]>([
@@ -116,7 +116,7 @@ export default function PublicPricesPage() {
         <div>
           <div className="inline-flex items-center gap-1.5 bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-black px-2.5 py-0.5 rounded-full uppercase">
             <ShieldCheck className="w-3.5 h-3.5 text-amber-700" />
-            Public Market Intelligence Feed
+            {t.publicMarketFeedBadge}
           </div>
           <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight mt-1.5">
             {t.pricesTitle}
@@ -150,7 +150,7 @@ export default function PublicPricesPage() {
                   : 'bg-white text-slate-700 border-amber-200 hover:bg-amber-50/50'
               }`}
             >
-              {crop.name}
+              {tCrop(crop.name)}
             </button>
           ))}
         </div>
@@ -173,23 +173,23 @@ export default function PublicPricesPage() {
                   {t.todayRate}
                 </span>
                 <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300">
-                  Agmarknet Live
+                  {t.agmarknetLiveBadge}
                 </span>
               </div>
 
               <div>
                 <div className="text-3xl font-black text-slate-900 tracking-tight">
                   ₹{data?.todayPrice?.modalPrice?.toLocaleString('en-IN') || 2233}{' '}
-                  <span className="text-sm font-semibold text-slate-400">/ Qtl</span>
+                  <span className="text-sm font-semibold text-slate-400">/ {t.commonQuintal}</span>
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1">
-                  Range: ₹{data?.todayPrice?.minPrice} – ₹{data?.todayPrice?.maxPrice} | Arrivals: {data?.todayPrice?.arrivalQuantity || 450} Qtl
+                  {t.priceRangeLabel}: ₹{data?.todayPrice?.minPrice} – ₹{data?.todayPrice?.maxPrice} | {t.arrivalsLabel}: {data?.todayPrice?.arrivalQuantity || 450} {t.commonQuintal}
                 </p>
               </div>
 
               <div className="pt-2 border-t border-amber-100 flex items-center justify-between text-xs font-bold">
                 <span className="text-slate-500">{t.weeklyAvg}:</span>
-                <span className="text-slate-900">₹{data?.analytics?.sma7 || 2213}/Qtl</span>
+                <span className="text-slate-900">₹{data?.analytics?.sma7 || 2213}/{t.commonQuintal}</span>
               </div>
             </div>
 
@@ -201,7 +201,7 @@ export default function PublicPricesPage() {
                   <span>{t.sellingWindow}</span>
                 </div>
                 <span className="bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase">
-                  {data?.sellingWindow?.confidence || 'HIGH'} CONFIDENCE
+                  {data?.sellingWindow?.confidence || 'HIGH'} {t.sellingWindowOptimal}
                 </span>
               </div>
 
@@ -215,8 +215,8 @@ export default function PublicPricesPage() {
               </div>
 
               <div className="pt-2 border-t border-amber-800/80 flex items-center justify-between text-xs text-amber-300">
-                <span>Momentum: <strong>{data?.analytics?.trend || 'BULLISH'}</strong></span>
-                <span>Delta: <strong>+{data?.analytics?.percentChange || 6.8}%</strong></span>
+                <span>{t.momentumLabel}: <strong>{data?.analytics?.trend || t.trendBullish}</strong></span>
+                <span>{t.deltaLabel}: <strong>+{data?.analytics?.percentChange || 6.8}%</strong></span>
               </div>
             </div>
 
@@ -236,18 +236,18 @@ export default function PublicPricesPage() {
                   {data?.comparison?.bestNearbyMarket?.marketName || 'Lasalgaon APMC'}
                 </div>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Rate: ₹{data?.comparison?.bestNearbyMarket?.modalPrice || 2380}/Qtl | Distance: {data?.comparison?.bestNearbyMarket?.distanceKm || 24} km
+                  ₹{data?.comparison?.bestNearbyMarket?.modalPrice || 2380}/{t.commonQuintal} | {t.distanceKm}: {data?.comparison?.bestNearbyMarket?.distanceKm || 24} {t.commonKm}
                 </p>
               </div>
 
               <div className="pt-2 border-t border-amber-100 text-xs text-slate-600 space-y-1">
                 <div className="flex justify-between">
-                  <span>Transport Cost:</span>
-                  <span className="font-bold text-rose-600">-₹{data?.comparison?.bestNearbyMarket?.transportCostPerQtl || 12}/Qtl</span>
+                  <span>{t.transportCostLabel}:</span>
+                  <span className="font-bold text-rose-600">-₹{data?.comparison?.bestNearbyMarket?.transportCostPerQtl || 12}/{t.commonQuintal}</span>
                 </div>
                 <div className="flex justify-between font-bold text-amber-700">
-                  <span>Net Arbitrage Benefit:</span>
-                  <span>+₹{data?.comparison?.bestNearbyMarket?.netGainPerQtl || 96}/Qtl</span>
+                  <span>{t.netArbitrageBenefitLabel}:</span>
+                  <span>+₹{data?.comparison?.bestNearbyMarket?.netGainPerQtl || 96}/{t.commonQuintal}</span>
                 </div>
               </div>
             </div>

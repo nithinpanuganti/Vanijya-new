@@ -1,10 +1,22 @@
-import { Controller, Post, Body, Get, UseGuards, HttpCode, HttpStatus, Req } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Req,
+  UseInterceptors,
+  UploadedFile,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthService } from './auth.service';
 import { CaptchaService, CaptchaResponse } from './captcha.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { AuthResponseDto, UserProfileDto } from './dto/auth-response.dto';
+import { AuthResponseDto, RegisterResponseDto, UserProfileDto } from './dto/auth-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Request } from 'express';
@@ -25,18 +37,24 @@ export class AuthController {
   }
 
   @Post('register')
-  @ApiOperation({ summary: 'Register a new Farmer, Buyer, or Admin' })
-  @ApiResponse({ status: 201, type: AuthResponseDto, description: 'User successfully registered' })
+  @UseInterceptors(FileInterceptor('profilePhoto', { limits: { fileSize: 5 * 1024 * 1024 } }))
+  @ApiConsumes('multipart/form-data', 'application/json')
+  @ApiOperation({ summary: 'Register a new Farmer or Buyer with multipart profile photo for administrative approval' })
+  @ApiResponse({ status: 201, type: RegisterResponseDto, description: 'Registration successfully submitted' })
+  @ApiResponse({ status: 400, description: 'Validation failed or admin signup blocked' })
   @ApiResponse({ status: 409, description: 'Phone or email already registered' })
-  register(@Body() dto: RegisterDto): Promise<AuthResponseDto> {
-    return this.authService.register(dto);
+  register(
+    @Body() dto: RegisterDto,
+    @UploadedFile() file?: any,
+  ): Promise<RegisterResponseDto> {
+    return this.authService.register(dto, file);
   }
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login with phone/email, password, and visual CAPTCHA verification' })
   @ApiResponse({ status: 200, type: AuthResponseDto, description: 'Login successful with JWT token' })
-  @ApiResponse({ status: 401, description: 'Invalid credentials or CAPTCHA verification failure' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials, pending approval, or CAPTCHA failure' })
   login(@Body() dto: LoginDto, @Req() req: Request): Promise<AuthResponseDto> {
     const rawIp = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || req.ip;
     const remoteIp = Array.isArray(rawIp) ? rawIp[0] : typeof rawIp === 'string' ? rawIp.split(',')[0].trim() : undefined;

@@ -3,19 +3,43 @@
 
 ---
 
-## 1. Authentication & Security Verification
+## 1. Authentication, Registration & Security Verification
 
-| Method | Endpoint | Description | Role / Auth |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/auth/captcha` | **Visual Alphanumeric CAPTCHA:** Generates distorted SVG security image + challenge ID | Public |
-| `POST` | `/auth/login` | Authenticate with phone/email, password, and CAPTCHA challenge answer $\rightarrow$ returns JWT | Public |
-| `GET` | `/auth/me` | Fetch authenticated user profile and verification status | Bearer JWT |
-| `GET` | `/users/me` | Retrieve profile details | Bearer JWT |
-| `PATCH` | `/users/me` | Update name, district, state, location | Bearer JWT |
+| Method | Endpoint | Description | Content-Type / Body | Role / Auth |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/auth/captcha` | **Visual Alphanumeric CAPTCHA:** Generates distorted SVG security image + challenge ID | JSON | Public |
+| `POST` | `/auth/register` | **Multipart Registration:** Register Farmer or Buyer with binary profile photo, live GPS, and state/district | `multipart/form-data` | Public |
+| `POST` | `/auth/login` | Authenticate with phone/email, password, and CAPTCHA challenge answer $\rightarrow$ returns JWT (blocked if `PENDING` / `REJECTED`) | `application/json` | Public |
+| `GET` | `/auth/me` | Fetch authenticated user profile and verification status | JSON | Bearer JWT |
+| `GET` | `/users/me` | Retrieve profile details and credentials | JSON | Bearer JWT |
+| `PATCH` | `/users/me` | Update name, district, state, location, crops | `application/json` | Bearer JWT |
+| `GET` | `/users/me/completion` | Dynamic profile completion score (0-100%) and missing fields checklist | JSON | Bearer JWT |
+| `GET` | `/users/:id/public` | Privacy-masked public profile (village, district, state only; GPS coordinates masked) | JSON | Public |
 
 ---
 
-## 2. Commodities & Markets
+## 2. Admin Verification & Registration Approval
+
+| Method | Endpoint | Description | Role / Auth |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/admin/registrations` | List registration requests with role, status, and state filters | `ADMIN` |
+| `GET` | `/admin/registrations/:id` | Full applicant dossier (photo, GPS, KCC/APMC or GSTIN/FSSAI) | `ADMIN` |
+| `PATCH` | `/admin/users/:id/approve` | Approve registration $\rightarrow$ marks `APPROVED`, `VERIFIED`, unlocks login | `ADMIN` |
+| `PATCH` | `/admin/users/:id/reject` | Reject registration with required `rejectionReason` $\rightarrow$ marks `REJECTED` | `ADMIN` |
+| `GET` | `/admin/dashboard` | Admin dashboard stats including pending registrations KPI counts | `ADMIN` |
+
+---
+
+## 3. Uploads & Media Storage
+
+| Method | Endpoint | Description | Content-Type | Role / Auth |
+| :--- | :--- | :--- | :--- | :--- |
+| `POST` | `/uploads/profile-photo/file` | Upload binary profile photo (JPG/PNG/WebP, max 5MB) | `multipart/form-data` | Bearer JWT / Public |
+| `GET` | `/uploads/profile-photos/:filename` | Serve stored photo with SVG avatar fallback | Binary Image / SVG | Public |
+
+---
+
+## 4. Commodities & Markets
 
 | Method | Endpoint | Description | Role / Auth |
 | :--- | :--- | :--- | :--- |
@@ -24,7 +48,7 @@
 
 ---
 
-## 3. Market Intelligence & Mandi Prices
+## 5. Market Intelligence & Mandi Prices
 
 | Method | Endpoint | Description | Role / Auth |
 | :--- | :--- | :--- | :--- |
@@ -36,7 +60,7 @@
 
 ---
 
-## 4. Crop Lots Management
+## 6. Crop Lots Management
 
 | Method | Endpoint | Description | Role / Auth |
 | :--- | :--- | :--- | :--- |
@@ -48,7 +72,7 @@
 
 ---
 
-## 5. Bidding & Negotiations
+## 7. Bidding & Negotiations
 
 | Method | Endpoint | Description | Role / Auth |
 | :--- | :--- | :--- | :--- |
@@ -58,37 +82,16 @@
 | `PATCH` | `/bids/:id/quantity` | **Modify Quantity:** Adjust sourcing quantity on a pending bid | `BUYER` / `ADMIN` |
 | `PATCH` | `/bids/:id/cancel` | **Cancel Bid:** Withdraw a pending bid (`PENDING` $\rightarrow$ `WITHDRAWN`) | `BUYER` / `ADMIN` |
 | `PATCH` | `/bids/:id/accept` | Accept winning bid (atomically marks lot `SOLD` and creates transaction) | `FARMER` |
-| `PATCH` | `/bids/:id/reject` | Reject a specific bid | `FARMER` |
+| `PATCH` | `/bids/:id/reject` | Decline incoming bid | `FARMER` |
 
 ---
 
-## 6. Transactions & Payment Fulfillment
+## 8. Settlements & Audit Trail
 
 | Method | Endpoint | Description | Role / Auth |
 | :--- | :--- | :--- | :--- |
-| `GET` | `/transactions` | List confirmed purchase contracts for authenticated user | Bearer JWT |
-| `GET` | `/transactions/:id` | Get contract breakdown, agreed rates, and payment state | Bearer JWT |
-| `GET` | `/payments/:transactionId` | View payment invoice, status, and bank UTR reference | Bearer JWT |
-| `PATCH` | `/payments/:transactionId/status` | Update payment state (`PENDING` $\rightarrow$ `INITIATED` $\rightarrow$ `PAID`) | Bearer JWT |
-
----
-
-## 7. Admin Oversight & Monitoring
-
-| Method | Endpoint | Description | Role / Auth |
-| :--- | :--- | :--- | :--- |
-| `GET` | `/admin/dashboard` | Unified marketplace KPI statistics and aggregates | `ADMIN` |
-| `GET` | `/admin/lots` | Monitor all crop lots across categories with filters | `ADMIN` |
-| `GET` | `/admin/bids` | Monitor all bidding activity with modification timeline | `ADMIN` |
-| `GET` | `/admin/users` | Farmers and buyers directories with sales/procurement volumes | `ADMIN` |
-| `GET` | `/admin/transactions` | Full trade contracts ledger and settlement states | `ADMIN` |
-| `GET` | `/admin/activity` | Live real-time audit event stream | `ADMIN` |
-
----
-
-## 8. Demo & Simulation
-
-| Method | Endpoint | Description | Role / Auth |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/demo/reset` | **1-Click Demo Reset:** Restores database state to baseline for judges | Public / Demo |
-| `GET` | `/health` | Server heartbeat and system status | Public |
+| `GET` | `/transactions` | List all finalized trades with escrow/settlement status | Bearer JWT |
+| `POST` | `/payments/simulate-upi` | Execute direct UPI/NEFT transfer to farmer bank account | `BUYER` |
+| `GET` | `/audit` | View chronological system audit trail | `ADMIN` |
+| `GET` | `/notifications` | View in-app alerts and notifications | Bearer JWT |
+| `PATCH` | `/notifications/:id/read` | Mark alert as read | Bearer JWT |

@@ -22,7 +22,7 @@ import {
 
 export default function TransactionsPage() {
   const { user, isAuthenticated } = useAuth();
-  const { t } = useLanguage();
+  const { t, tCrop } = useLanguage();
   const { showToast } = useToast();
 
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -63,10 +63,10 @@ export default function TransactionsPage() {
         status,
         paymentReference: referenceMap[transactionId] || 'UPI-HDFC-992144',
       });
-      showToast(`Payment updated to ${status}!`, 'success');
+      showToast(t.msgProfileUpdatedSuccess, 'success');
       fetchTransactions();
     } catch (err: any) {
-      showToast(err.message || 'Failed to update payment status', 'error');
+      showToast(err.message || t.msgLoginFailed, 'error');
     } finally {
       setUpdatingId(null);
     }
@@ -78,14 +78,14 @@ export default function TransactionsPage() {
         <div className="w-14 h-14 bg-amber-100 text-amber-900 rounded-full flex items-center justify-center mx-auto">
           <LogIn className="w-8 h-8" />
         </div>
-        <h2 className="text-xl font-black text-slate-900">Sign In to View Purchases</h2>
-        <p className="text-xs text-slate-600">View legally binding purchase contracts and manage payment settlements.</p>
+        <h2 className="text-xl font-black text-slate-900">{t.signInToPurchasesTitle}</h2>
+        <p className="text-xs text-slate-600">{t.signInToPurchasesDesc}</p>
         <div className="pt-2">
           <Link
             href="/login"
             className="block w-full bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-black py-3 rounded-2xl text-xs transition shadow"
           >
-            Go to Sign In
+            {t.btnSignIn}
           </Link>
         </div>
       </div>
@@ -98,7 +98,7 @@ export default function TransactionsPage() {
         <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
           {t.purchasesTitle}
         </h1>
-        <p className="text-xs text-slate-500 mt-0.5">Manage legal purchase agreements and electronic digital settlements</p>
+        <p className="text-xs text-slate-500 mt-0.5">{t.purchasesSubtitle}</p>
       </div>
 
       {loading ? (
@@ -109,13 +109,13 @@ export default function TransactionsPage() {
       ) : transactions.length === 0 ? (
         <div className="bg-white p-10 rounded-3xl border border-amber-200 text-center space-y-3 max-w-md mx-auto">
           <FileCheck className="w-10 h-10 text-amber-300 mx-auto" />
-          <h2 className="text-base font-black text-slate-900">No Finalized Purchases Yet</h2>
-          <p className="text-xs text-slate-500">When a farmer accepts your bid offer, the purchase contract will appear here.</p>
+          <h2 className="text-base font-black text-slate-900">{t.noFinalizedPurchasesTitle}</h2>
+          <p className="text-xs text-slate-500">{t.noFinalizedPurchasesDesc}</p>
           <Link
             href="/browse-lots"
             className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-black px-6 py-3 rounded-2xl text-xs shadow transition"
           >
-            Explore Marketplace
+            {t.browseMarketplaceBtn}
           </Link>
         </div>
       ) : (
@@ -132,13 +132,13 @@ export default function TransactionsPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-100 pb-4">
                   <div className="space-y-1">
                     <span className="text-xs font-bold text-slate-400 uppercase">
-                      Contract #{txn.id?.substring(0, 8)}
+                      {t.contractNumberLabel} #{txn.id?.substring(0, 8)}
                     </span>
                     <h2 className="text-xl font-black text-slate-900 tracking-tight">
-                      {txn.lot?.crop?.name || 'Crop'} — {txn.quantity} {txn.lot?.unit || 'Qtl'}
+                      {tCrop(txn.lot?.crop?.name) || txn.lot?.crop?.name || 'Crop'} — {txn.quantity} {txn.lot?.unit || t.commonQuintal}
                     </h2>
                     <p className="text-xs text-slate-500">
-                      Farmer Seller: <strong>{txn.farmer?.name || 'Patel Farms'}</strong> ({txn.farmer?.district || 'Nashik'})
+                      {t.farmerSellerLabel}: <strong>{txn.farmer?.name || 'Patel Farms'}</strong> ({txn.farmer?.district || 'Nashik'})
                     </p>
                   </div>
 
@@ -149,22 +149,22 @@ export default function TransactionsPage() {
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                   <div className="bg-amber-50/50 p-3 rounded-2xl border border-amber-100">
-                    <span className="text-slate-400 font-bold block text-[10px]">Agreed Deal Rate</span>
-                    <span className="font-black text-slate-900 text-sm">₹{txn.agreedPrice}/Qtl</span>
+                    <span className="text-slate-400 font-bold block text-[10px]">{t.agreedDealRateLabel}</span>
+                    <span className="font-black text-slate-900 text-sm">₹{txn.agreedPrice}/{t.commonQuintal}</span>
                   </div>
                   <div className="bg-amber-50/50 p-3 rounded-2xl border border-amber-100">
-                    <span className="text-slate-400 font-bold block text-[10px]">Contract Total</span>
+                    <span className="text-slate-400 font-bold block text-[10px]">{t.contractTotalLabel}</span>
                     <span className="font-black text-amber-900 text-sm">
                       ₹{txn.totalAmount?.toLocaleString('en-IN')}
                     </span>
                   </div>
                   <div className="bg-amber-50/50 p-3 rounded-2xl border border-amber-100">
-                    <span className="text-slate-400 font-bold block text-[10px]">Payment Milestone</span>
-                    <span className="font-black text-slate-900 text-sm">{txn.payment?.status || 'PENDING'}</span>
+                    <span className="text-slate-400 font-bold block text-[10px]">{t.paymentMilestoneLabel}</span>
+                    <span className="font-black text-slate-900 text-sm">{txn.payment?.status === 'PAID' ? t.statusSettledPaid : txn.payment?.status === 'INITIATED' ? t.statusPaymentDispatched : t.statusPendingReview}</span>
                   </div>
                   <div className="bg-amber-50/50 p-3 rounded-2xl border border-amber-100">
-                    <span className="text-slate-400 font-bold block text-[10px]">Commission Cut</span>
-                    <span className="font-black text-amber-600 text-sm">₹0 (Zero Cut)</span>
+                    <span className="text-slate-400 font-bold block text-[10px]">{t.commissionCutLabel}</span>
+                    <span className="font-black text-amber-600 text-sm">{t.zeroCutLabel}</span>
                   </div>
                 </div>
 
@@ -172,8 +172,8 @@ export default function TransactionsPage() {
                 <div className="p-4 bg-amber-50/40 rounded-2xl border border-amber-200/80 space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="space-y-0.5">
-                      <span className="text-xs font-black text-slate-900">Digital Settlement & Bank UTR Reference</span>
-                      <p className="text-[11px] text-slate-500">Record digital transaction reference for immediate farmer payout verification</p>
+                      <span className="text-xs font-black text-slate-900">{t.digitalSettlementTitle}</span>
+                      <p className="text-[11px] text-slate-500">{t.digitalSettlementDesc}</p>
                     </div>
 
                     <input
@@ -190,22 +190,22 @@ export default function TransactionsPage() {
                       <button
                         onClick={() => handleUpdatePaymentStatus(txn.id, 'INITIATED')}
                         disabled={updatingId === txn.id}
-                        className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-950 font-bold rounded-xl text-xs transition"
+                        className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-950 font-bold rounded-xl text-xs transition cursor-pointer"
                       >
-                        Mark Dispatched (Initiated)
+                        {t.markDispatchedBtn}
                       </button>
 
                       <button
                         onClick={() => handleUpdatePaymentStatus(txn.id, 'PAID')}
                         disabled={updatingId === txn.id}
-                        className="px-5 py-2 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black rounded-xl text-xs shadow-md shadow-amber-500/20 transition flex items-center gap-1.5"
+                        className="px-5 py-2 bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black rounded-xl text-xs shadow-md shadow-amber-500/20 transition flex items-center gap-1.5 cursor-pointer"
                       >
                         {updatingId === txn.id ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
                           <Check className="w-3.5 h-3.5" />
                         )}
-                        Confirm Settlement (Paid)
+                        {t.confirmSettlementBtn}
                       </button>
                     </div>
                   )}
@@ -213,7 +213,7 @@ export default function TransactionsPage() {
                   {isPaid && (
                     <div className="flex items-center gap-2 text-xs font-black text-amber-900 pt-1">
                       <CheckCircle2 className="w-4 h-4 text-amber-600" />
-                      <span>Payment Verified & Released to Farmer. Reference: {txn.payment?.paymentReference || 'UPI-HDFC-992144'}</span>
+                      <span>{t.paymentVerifiedReleased}: {txn.payment?.paymentReference || 'UPI-HDFC-992144'}</span>
                     </div>
                   )}
                 </div>

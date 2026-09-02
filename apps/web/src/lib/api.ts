@@ -7,14 +7,18 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(endpoint: string, options: RequestInit = {}, isFormData: boolean = false): Promise<T> {
   const token = typeof window !== 'undefined' ? localStorage.getItem('vanijya_token') : null;
 
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
+  const headers: Record<string, string> = {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    ...options.headers,
+    ...(options.headers as Record<string, string> || {}),
   };
+
+  // Only set application/json if NOT sending FormData (let browser set multipart boundary)
+  if (!isFormData && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
 
@@ -31,7 +35,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
         errorData = await response.json();
         errorMessage = errorData.message || errorMessage;
       } catch {
-        // Response was not JSON
+        // Response was not JSON (e.g. 413 Payload Too Large raw HTML/text)
+        if (response.status === 413) {
+          errorMessage = 'Profile photo exceeds the 5 MB size limit.';
+        }
       }
       throw new ApiError(response.status, errorMessage, errorData);
     }
@@ -51,18 +58,30 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
 export const api = {
   get: <T>(endpoint: string, options?: RequestInit) => request<T>(endpoint, { method: 'GET', ...options }),
-  post: <T>(endpoint: string, data?: any, options?: RequestInit) =>
-    request<T>(endpoint, {
-      method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
-      ...options,
-    }),
-  patch: <T>(endpoint: string, data?: any, options?: RequestInit) =>
-    request<T>(endpoint, {
-      method: 'PATCH',
-      body: data ? JSON.stringify(data) : undefined,
-      ...options,
-    }),
+  post: <T>(endpoint: string, data?: any, options?: RequestInit) => {
+    const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+    return request<T>(
+      endpoint,
+      {
+        method: 'POST',
+        body: isFormData ? data : data ? JSON.stringify(data) : undefined,
+        ...options,
+      },
+      isFormData,
+    );
+  },
+  patch: <T>(endpoint: string, data?: any, options?: RequestInit) => {
+    const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+    return request<T>(
+      endpoint,
+      {
+        method: 'PATCH',
+        body: isFormData ? data : data ? JSON.stringify(data) : undefined,
+        ...options,
+      },
+      isFormData,
+    );
+  },
   delete: <T>(endpoint: string, options?: RequestInit) =>
     request<T>(endpoint, { method: 'DELETE', ...options }),
 };

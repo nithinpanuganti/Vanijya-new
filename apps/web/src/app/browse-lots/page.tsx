@@ -19,7 +19,7 @@ import {
 
 export default function BrowseLotsPage() {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, tCrop } = useLanguage();
   const [lots, setLots] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCrop, setSelectedCrop] = useState('ALL');
@@ -84,7 +84,7 @@ export default function BrowseLotsPage() {
                   : 'bg-white text-slate-700 border-amber-200 hover:bg-amber-50/50'
               }`}
             >
-              {crop === 'ALL' ? t.filterAllCrops : crop}
+              {crop === 'ALL' ? t.filterAllCrops : tCrop(crop)}
             </button>
           ))}
         </div>
@@ -98,8 +98,8 @@ export default function BrowseLotsPage() {
       ) : filteredLots.length === 0 ? (
         <div className="bg-white p-10 rounded-3xl border border-amber-200 text-center space-y-3 max-w-md mx-auto">
           <ShoppingBag className="w-10 h-10 text-amber-300 mx-auto" />
-          <h2 className="text-base font-black text-slate-900">No Crop Lots Matching Filter</h2>
-          <p className="text-xs text-slate-500">Try clearing filters or search query to view available harvest lots.</p>
+          <h2 className="text-base font-black text-slate-900">{t.noLotsFoundTitle}</h2>
+          <p className="text-xs text-slate-500">{t.noLotsFoundDesc}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -112,10 +112,10 @@ export default function BrowseLotsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-base font-black text-slate-900 tracking-tight">
-                      {lot.crop?.name || 'Crop'} ({lot.quantity} {lot.unit || 'Qtl'})
+                      {tCrop(lot.crop?.name) || lot.crop?.name || 'Crop'} ({lot.quantity} {lot.unit === 'QUINTAL' || !lot.unit ? t.commonQuintal : lot.unit === 'KG' ? t.commonKg : lot.unit === 'TONNE' ? t.commonTonne : lot.unit})
                     </span>
                     <p className="text-[11px] text-slate-500 font-semibold">
-                      Producer: {lot.farmer?.name || 'Verified Farmer'}
+                      {t.producerLabel}: {lot.farmer?.name || t.verifiedFarmerLabel}
                     </p>
                   </div>
                   <StatusBadge status={lot.status} />
@@ -123,12 +123,14 @@ export default function BrowseLotsPage() {
 
                 <div className="grid grid-cols-2 gap-2 text-xs bg-amber-50/50 p-3 rounded-2xl border border-amber-100">
                   <div>
-                    <span className="text-slate-400 font-bold block text-[10px]">Expected Rate</span>
-                    <span className="font-black text-slate-900 text-sm">₹{lot.expectedPrice}/Qtl</span>
+                    <span className="text-slate-400 font-bold block text-[10px]">{t.expectedRateLabel}</span>
+                    <span className="font-black text-slate-900 text-sm">₹{lot.expectedPrice}/{t.commonQuintal}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 font-bold block text-[10px]">Quality Grade</span>
-                    <span className="font-black text-amber-800 text-sm">{lot.qualityGrade || 'GRADE_A'}</span>
+                    <span className="text-slate-400 font-bold block text-[10px]">{t.qualityGradeLabel}</span>
+                    <span className="font-black text-amber-800 text-sm">
+                      {lot.qualityGrade === 'GRADE_A' ? t.commonGradeA : lot.qualityGrade === 'GRADE_B' ? t.commonGradeB : lot.qualityGrade === 'GRADE_C' ? t.commonGradeC : (lot.qualityGrade || t.commonGradeA)}
+                    </span>
                   </div>
                 </div>
 
@@ -140,7 +142,7 @@ export default function BrowseLotsPage() {
 
               <div className="pt-3 border-t border-amber-100 flex items-center justify-between">
                 <span className="text-[11px] text-slate-400">
-                  {lot.bids?.length || 0} active bid{lot.bids?.length !== 1 ? 's' : ''}
+                  {lot.bids?.length || 0} {t.activeBidsCountLabel}
                 </span>
                 <Link
                   href={`/browse-lots/${lot.id}`}

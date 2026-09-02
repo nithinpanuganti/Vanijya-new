@@ -10,6 +10,7 @@
 
   body {
     @apply bg-amber-50/40 text-slate-900 antialiased;
+    font-family: var(--font-noto-sans), var(--font-noto-devanagari), var(--font-noto-telugu), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }

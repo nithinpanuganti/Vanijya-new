@@ -5,24 +5,35 @@
 
 ## 1. Cloud Deployment Architectures
 
-### Option A: Single-Host Production Deployment (Docker Compose)
+### Option A: Single-Host Production Deployment (Node.js & PM2)
 Recommended for Hackathon live staging and pilot validation.
 
 1. **Host Setup (AWS EC2 / Ubuntu Linux):**
-   - Recommended: AWS EC2 `t3.medium` (2 vCPU, 4GB RAM) with Ubuntu 22.04 LTS.
+   - Recommended: AWS EC2 `t3.medium` (2 vCPU, 4GB RAM) with Ubuntu 22.04 LTS & Node.js 20.
    - Open Inbound Ports: `80` (HTTP), `443` (HTTPS), `3000` (Unified Web Portal), `4000` (Backend API).
 
-2. **Clone & Launch with Docker Compose:**
+2. **Clone & Build:**
    ```bash
    git clone https://github.com/your-org/vanijya.git
    cd vanijya
-   docker compose -f infrastructure/docker-compose.prod.yml up -d --build
+   npm install
+   npm run build:packages
+   npx prisma generate --schema=apps/backend/prisma/schema.prisma
+   npm run build
    ```
 
 3. **Database Seed & Initialize:**
    ```bash
-   docker exec -it vanijya-backend-prod npx prisma db push
-   docker exec -it vanijya-backend-prod npx prisma db seed
+   npx prisma db push --schema=apps/backend/prisma/schema.prisma
+   npx prisma db seed --schema=apps/backend/prisma/schema.prisma
+   ```
+
+4. **Launch with PM2 / Process Manager:**
+   ```bash
+   npm install -g pm2
+   pm2 start apps/backend/dist/main.js --name "vanijya-backend"
+   pm2 start "npm run start --workspace=apps/web" --name "vanijya-web"
+   pm2 save
    ```
 
 ---

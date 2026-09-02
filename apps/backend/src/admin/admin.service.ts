@@ -1,61 +1,121 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FALLBACK_LOTS } from '../lots/lots.service';
 import { FALLBACK_BIDS, FALLBACK_TRANSACTIONS, FALLBACK_PAYMENTS } from '../bids/bids.service';
-import { FALLBACK_USERS } from '../auth/auth.service';
+import {
+  FALLBACK_USERS,
+  getAllInMemoryUsers,
+  findInMemoryUserById,
+  updateInMemoryUser,
+} from '../auth/fallback-users';
 import { AuditService } from '../audit/audit.service';
-import { CropLotStatus, BidStatus, TransactionStatus, PaymentStatus, Role, AuditAction } from '@prisma/client';
+import { NotificationsService } from '../notifications/notifications.service';
+import {
+  CropLotStatus,
+  BidStatus,
+  TransactionStatus,
+  PaymentStatus,
+  Role,
+  ApprovalStatus,
+  VerificationStatus,
+  AuditAction,
+} from '@prisma/client';
 
 @Injectable()
 export class AdminService {
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
+    private notificationsService: NotificationsService,
   ) {}
 
+  private getFallbackDashboardStats(recentActivity: any[] = []) {
+    const allUsers = getAllInMemoryUsers();
+    const farmers = allUsers.filter((u) => u.role === Role.FARMER);
+    const buyers = allUsers.filter((u) => u.role === Role.BUYER);
+    const pendingFarmers = allUsers.filter(
+      (u) => u.role === Role.FARMER && u.approvalStatus === ApprovalStatus.PENDING,
+    ).length;
+    const pendingBuyers = allUsers.filter(
+      (u) => u.role === Role.BUYER && u.approvalStatus === ApprovalStatus.PENDING,
+    ).length;
+    const approvedFarmers = allUsers.filter(
+      (u) => u.role === Role.FARMER && u.approvalStatus === ApprovalStatus.APPROVED,
+    ).length;
+    const approvedBuyers = allUsers.filter(
+      (u) => u.role === Role.BUYER && u.approvalStatus === ApprovalStatus.APPROVED,
+    ).length;
+
+    const activeLots = FALLBACK_LOTS.filter(
+      (l) => l.status === CropLotStatus.OPEN || l.status === CropLotStatus.BIDDING,
+    ).length;
+    const activeBiddingLots = FALLBACK_LOTS.filter(
+      (l) => l.status === CropLotStatus.BIDDING,
+    ).length;
+    const soldLots = FALLBACK_LOTS.filter((l) => l.status === CropLotStatus.SOLD).length;
+    const cancelledLots = FALLBACK_LOTS.filter((l) => l.status === CropLotStatus.CANCELLED).length;
+
+    const pendingBids = FALLBACK_BIDS.filter((b) => b.status === BidStatus.PENDING).length;
+    const acceptedBids = FALLBACK_BIDS.filter((b) => b.status === BidStatus.ACCEPTED).length;
+    const cancelledBids = FALLBACK_BIDS.filter((b) => b.status === BidStatus.WITHDRAWN).length;
+    const modifiedBids = 0;
+
+    const totalTransactionValue =
+      FALLBACK_TRANSACTIONS.reduce((acc, t) => acc + (t.totalAmount || 0), 0) +
+      (soldLots > 0 ? 174000 : 0);
+    const completedPaymentsValue =
+      FALLBACK_PAYMENTS.filter((p) => p.status === PaymentStatus.PAID).reduce(
+        (acc, p) => acc + (p.amount || 0),
+        0,
+      ) + (soldLots > 0 ? 174000 : 0);
+    const pendingPaymentsValue = FALLBACK_PAYMENTS.filter(
+      (p) => p.status === PaymentStatus.PENDING,
+    ).reduce((acc, p) => acc + (p.amount || 0), 0);
+
+    return {
+      totalFarmers: farmers.length,
+      totalBuyers: buyers.length,
+      pendingFarmers,
+      pendingBuyers,
+      pendingRegistrations: pendingFarmers + pendingBuyers,
+      approvedFarmers,
+      approvedBuyers,
+      approvedAccounts: approvedFarmers + approvedBuyers,
+      activeLots,
+      activeBiddingLots,
+      soldLots,
+      cancelledLots,
+      pendingBids,
+      acceptedBids,
+      cancelledBids,
+      modifiedBids,
+      totalTransactionValue,
+      pendingPaymentsValue,
+      completedPaymentsValue,
+      recentActivity,
+    };
+  }
+
   async getDashboardStats() {
-    const recentActivity = await this.auditService.getRecent(10);
+    let recentActivity: any[] = [];
+    try {
+      recentActivity = await this.auditService.getRecent(10);
+    } catch {
+      recentActivity = [];
+    }
 
     if (!this.prisma.isConnected) {
-      const farmers = FALLBACK_USERS.filter((u) => u.role === Role.FARMER);
-      const buyers = FALLBACK_USERS.filter((u) => u.role === Role.BUYER);
-
-      const activeLots = FALLBACK_LOTS.filter((l) => l.status === CropLotStatus.OPEN || l.status === CropLotStatus.BIDDING).length;
-      const activeBiddingLots = FALLBACK_LOTS.filter((l) => l.status === CropLotStatus.BIDDING).length;
-      const soldLots = FALLBACK_LOTS.filter((l) => l.status === CropLotStatus.SOLD).length;
-      const cancelledLots = FALLBACK_LOTS.filter((l) => l.status === CropLotStatus.CANCELLED).length;
-
-      const pendingBids = FALLBACK_BIDS.filter((b) => b.status === BidStatus.PENDING).length;
-      const acceptedBids = FALLBACK_BIDS.filter((b) => b.status === BidStatus.ACCEPTED).length;
-      const cancelledBids = FALLBACK_BIDS.filter((b) => b.status === BidStatus.WITHDRAWN).length;
-      const modifiedBids = (await this.auditService.getRecent(100)).filter((a) => a.action === AuditAction.QUANTITY_MODIFIED).length;
-
-      const totalTransactionValue = FALLBACK_TRANSACTIONS.reduce((acc, t) => acc + (t.totalAmount || 0), 0) + (soldLots > 0 ? 174000 : 0);
-      const completedPaymentsValue = FALLBACK_PAYMENTS.filter((p) => p.status === PaymentStatus.PAID).reduce((acc, p) => acc + (p.amount || 0), 0) + (soldLots > 0 ? 174000 : 0);
-      const pendingPaymentsValue = FALLBACK_PAYMENTS.filter((p) => p.status === PaymentStatus.PENDING).reduce((acc, p) => acc + (p.amount || 0), 0);
-
-      return {
-        totalFarmers: farmers.length,
-        totalBuyers: buyers.length,
-        activeLots,
-        activeBiddingLots,
-        soldLots,
-        cancelledLots,
-        pendingBids,
-        acceptedBids,
-        cancelledBids,
-        modifiedBids,
-        totalTransactionValue,
-        pendingPaymentsValue,
-        completedPaymentsValue,
-        recentActivity,
-      };
+      return this.getFallbackDashboardStats(recentActivity);
     }
 
     try {
       const [
         totalFarmers,
         totalBuyers,
+        pendingFarmers,
+        pendingBuyers,
+        approvedFarmers,
+        approvedBuyers,
         activeLots,
         activeBiddingLots,
         soldLots,
@@ -68,7 +128,21 @@ export class AdminService {
       ] = await Promise.all([
         this.prisma.user.count({ where: { role: Role.FARMER } }),
         this.prisma.user.count({ where: { role: Role.BUYER } }),
-        this.prisma.cropLot.count({ where: { status: { in: [CropLotStatus.OPEN, CropLotStatus.BIDDING] } } }),
+        this.prisma.user.count({
+          where: { role: Role.FARMER, approvalStatus: ApprovalStatus.PENDING },
+        }),
+        this.prisma.user.count({
+          where: { role: Role.BUYER, approvalStatus: ApprovalStatus.PENDING },
+        }),
+        this.prisma.user.count({
+          where: { role: Role.FARMER, approvalStatus: ApprovalStatus.APPROVED },
+        }),
+        this.prisma.user.count({
+          where: { role: Role.BUYER, approvalStatus: ApprovalStatus.APPROVED },
+        }),
+        this.prisma.cropLot.count({
+          where: { status: { in: [CropLotStatus.OPEN, CropLotStatus.BIDDING] } },
+        }),
         this.prisma.cropLot.count({ where: { status: CropLotStatus.BIDDING } }),
         this.prisma.cropLot.count({ where: { status: CropLotStatus.SOLD } }),
         this.prisma.cropLot.count({ where: { status: CropLotStatus.CANCELLED } }),
@@ -94,6 +168,12 @@ export class AdminService {
       return {
         totalFarmers,
         totalBuyers,
+        pendingFarmers,
+        pendingBuyers,
+        pendingRegistrations: pendingFarmers + pendingBuyers,
+        approvedFarmers,
+        approvedBuyers,
+        approvedAccounts: approvedFarmers + approvedBuyers,
         activeLots,
         activeBiddingLots,
         soldLots,
@@ -108,158 +188,440 @@ export class AdminService {
         recentActivity,
       };
     } catch (err) {
-      return this.getDashboardStats();
+      return this.getFallbackDashboardStats(recentActivity);
     }
   }
 
-  async getAllLots(query: any = {}) {
+  private getFallbackRegistrations(query: any = {}) {
+    const { role, status, search, state, sortBy } = query;
+    let users = getAllInMemoryUsers().filter(
+      (u) => u.role === Role.FARMER || u.role === Role.BUYER,
+    );
+
+    if (role && role !== 'ALL') {
+      users = users.filter((u) => u.role === role);
+    }
+    if (status && status !== 'ALL') {
+      users = users.filter((u) => u.approvalStatus === status);
+    }
+    if (state && state !== 'ALL') {
+      users = users.filter((u) => u.state?.toLowerCase() === state.toLowerCase());
+    }
+    if (search && search.trim()) {
+      const q = search.toLowerCase();
+      users = users.filter(
+        (u) =>
+          u.name.toLowerCase().includes(q) ||
+          u.email?.toLowerCase().includes(q) ||
+          u.phone?.includes(q) ||
+          u.district?.toLowerCase().includes(q) ||
+          u.organizationName?.toLowerCase().includes(q) ||
+          u.state?.toLowerCase().includes(q),
+      );
+    }
+
+    if (sortBy === 'oldest') {
+      users.sort((a, b) => (a.createdAt?.getTime() || 0) - (b.createdAt?.getTime() || 0));
+    } else {
+      users.sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0));
+    }
+
+    return users.map((u) => ({
+      id: u.id,
+      name: u.name,
+      phone: u.phone,
+      email: u.email,
+      role: u.role,
+      district: u.district,
+      state: u.state,
+      village: u.village,
+      location: u.location,
+      latitude: u.latitude,
+      longitude: u.longitude,
+      profilePhotoUrl: u.profilePhotoUrl,
+      approvalStatus: u.approvalStatus,
+      verificationStatus: u.verificationStatus,
+      isVerified: u.isVerified,
+      rejectionReason: u.rejectionReason,
+      approvedBy: u.approvedBy,
+      approvedAt: u.approvedAt,
+      primaryCrop: u.primaryCrop,
+      farmSize: u.farmSize,
+      kccNumber: u.kccNumber,
+      apmcNumber: u.apmcNumber,
+      organizationName: u.organizationName,
+      contactPerson: u.contactPerson,
+      businessType: u.businessType,
+      gstin: u.gstin,
+      fssaiNumber: u.fssaiNumber,
+      warehouseLocation: u.warehouseLocation,
+      createdAt: u.createdAt || new Date(),
+    }));
+  }
+
+  async getRegistrations(query: any = {}) {
+    const { role, status, search, state, sortBy } = query;
+
     if (!this.prisma.isConnected) {
-      let lots = [...FALLBACK_LOTS];
-      if (query.status) lots = lots.filter((l) => l.status === query.status);
-      if (query.cropId) lots = lots.filter((l) => l.cropId === query.cropId || l.crop?.name === query.cropId);
-      return lots;
+      return this.getFallbackRegistrations(query);
     }
 
     try {
-      const where: any = {};
-      if (query.status) where.status = query.status;
-      if (query.cropId) where.cropId = query.cropId;
+      const where: any = {
+        role: { in: [Role.FARMER, Role.BUYER] },
+      };
 
-      const lots = await this.prisma.cropLot.findMany({
+      if (role && role !== 'ALL') where.role = role;
+      if (status && status !== 'ALL') where.approvalStatus = status;
+      if (state && state !== 'ALL') where.state = { equals: state, mode: 'insensitive' };
+      if (search && search.trim()) {
+        const q = search.trim();
+        where.OR = [
+          { name: { contains: q, mode: 'insensitive' } },
+          { email: { contains: q, mode: 'insensitive' } },
+          { phone: { contains: q } },
+          { district: { contains: q, mode: 'insensitive' } },
+          { organizationName: { contains: q, mode: 'insensitive' } },
+          { state: { contains: q, mode: 'insensitive' } },
+        ];
+      }
+
+      const orderBy: any =
+        sortBy === 'oldest' ? { createdAt: 'asc' } : { createdAt: 'desc' };
+
+      const users = await this.prisma.user.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          crop: true,
-          farmer: {
-            select: { id: true, name: true, phone: true, district: true, state: true, isVerified: true },
-          },
-          bids: {
-            orderBy: { price: 'desc' },
-            include: { buyer: { select: { id: true, name: true, district: true } } },
-          },
-          transaction: {
-            include: { buyer: { select: { id: true, name: true } }, payment: true },
-          },
-          _count: { select: { bids: true } },
+        orderBy,
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          email: true,
+          role: true,
+          district: true,
+          state: true,
+          village: true,
+          location: true,
+          latitude: true,
+          longitude: true,
+          profilePhotoUrl: true,
+          approvalStatus: true,
+          verificationStatus: true,
+          isVerified: true,
+          rejectionReason: true,
+          approvedBy: true,
+          approvedAt: true,
+          primaryCrop: true,
+          farmSize: true,
+          kccNumber: true,
+          apmcNumber: true,
+          organizationName: true,
+          contactPerson: true,
+          businessType: true,
+          gstin: true,
+          fssaiNumber: true,
+          warehouseLocation: true,
+          createdAt: true,
+          updatedAt: true,
         },
       });
 
-      return lots.map((l) => ({
-        ...l,
-        highestBid: l.bids.length > 0 ? Math.max(...l.bids.map((b) => b.price)) : null,
-      }));
+      return users;
     } catch (err) {
+      return this.getFallbackRegistrations(query);
+    }
+  }
+
+  async getRegistrationById(id: string) {
+    if (!this.prisma.isConnected) {
+      const user = findInMemoryUserById(id);
+      if (!user) throw new NotFoundException('Registration record not found.');
+      return user;
+    }
+
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          email: true,
+          role: true,
+          district: true,
+          state: true,
+          village: true,
+          location: true,
+          latitude: true,
+          longitude: true,
+          profilePhotoUrl: true,
+          approvalStatus: true,
+          verificationStatus: true,
+          isVerified: true,
+          rejectionReason: true,
+          approvedBy: true,
+          approvedAt: true,
+          primaryCrop: true,
+          farmSize: true,
+          kccNumber: true,
+          apmcNumber: true,
+          organizationName: true,
+          contactPerson: true,
+          businessType: true,
+          gstin: true,
+          fssaiNumber: true,
+          warehouseLocation: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      if (!user) {
+        // Check in-memory fallback
+        const inMem = findInMemoryUserById(id);
+        if (!inMem) throw new NotFoundException('Registration record not found.');
+        return inMem;
+      }
+
+      return user;
+    } catch (err) {
+      const inMem = findInMemoryUserById(id);
+      if (!inMem) throw new NotFoundException('Registration record not found.');
+      return inMem;
+    }
+  }
+
+  async approveUser(targetUserId: string, adminUser: any) {
+    let updatedUser: any;
+
+    if (this.prisma.isConnected) {
+      const user = await this.prisma.user.findUnique({ where: { id: targetUserId } });
+      if (!user) {
+        const inMem = findInMemoryUserById(targetUserId);
+        if (!inMem) throw new NotFoundException('User not found.');
+      } else {
+        updatedUser = await this.prisma.user.update({
+          where: { id: targetUserId },
+          data: {
+            approvalStatus: ApprovalStatus.APPROVED,
+            verificationStatus: VerificationStatus.VERIFIED,
+            isVerified: true,
+            approvedBy: adminUser.name || adminUser.email || 'Vanijya Admin',
+            approvedAt: new Date(),
+            rejectionReason: null,
+          },
+        });
+      }
+    }
+
+    // Always keep in-memory synchronized
+    const inMemUpdated = updateInMemoryUser(targetUserId, {
+      approvalStatus: ApprovalStatus.APPROVED,
+      verificationStatus: VerificationStatus.VERIFIED,
+      isVerified: true,
+      approvedBy: adminUser.name || 'Vanijya Admin',
+      approvedAt: new Date(),
+      rejectionReason: undefined,
+    });
+
+    if (!updatedUser) {
+      if (!inMemUpdated) throw new NotFoundException('User not found.');
+      updatedUser = inMemUpdated;
+    }
+
+    // Audit Log
+    await this.auditService.log({
+      actorId: adminUser.id || 'usr-admin-1',
+      targetUserId,
+      action: AuditAction.REGISTRATION_APPROVED,
+      metadata: {
+        targetName: updatedUser.name,
+        targetRole: updatedUser.role,
+        approvedBy: adminUser.name || 'Vanijya Admin',
+      },
+    });
+
+    // Notify User
+    await this.notificationsService.create({
+      userId: targetUserId,
+      title: 'Account Approved',
+      message: 'Your Vanijya account has been approved by the administrator. You can now access all portal features.',
+      type: 'APPROVAL',
+    });
+
+    return {
+      message: `User ${updatedUser.name} (${updatedUser.role}) has been successfully approved.`,
+      user: updatedUser,
+    };
+  }
+
+  async rejectUser(targetUserId: string, rejectionReason: string, adminUser: any) {
+    if (!rejectionReason || rejectionReason.trim() === '') {
+      throw new BadRequestException('A reason is required to reject a registration.');
+    }
+
+    let updatedUser: any;
+
+    if (this.prisma.isConnected) {
+      const user = await this.prisma.user.findUnique({ where: { id: targetUserId } });
+      if (!user) {
+        const inMem = findInMemoryUserById(targetUserId);
+        if (!inMem) throw new NotFoundException('User not found.');
+      } else {
+        updatedUser = await this.prisma.user.update({
+          where: { id: targetUserId },
+          data: {
+            approvalStatus: ApprovalStatus.REJECTED,
+            verificationStatus: VerificationStatus.REJECTED,
+            isVerified: false,
+            rejectionReason: rejectionReason.trim(),
+            approvedBy: adminUser.name || adminUser.email || 'Vanijya Admin',
+            approvedAt: new Date(),
+          },
+        });
+      }
+    }
+
+    // Always keep in-memory synchronized
+    const inMemUpdated = updateInMemoryUser(targetUserId, {
+      approvalStatus: ApprovalStatus.REJECTED,
+      verificationStatus: VerificationStatus.REJECTED,
+      isVerified: false,
+      rejectionReason: rejectionReason.trim(),
+      approvedBy: adminUser.name || 'Vanijya Admin',
+      approvedAt: new Date(),
+    });
+
+    if (!updatedUser) {
+      if (!inMemUpdated) throw new NotFoundException('User not found.');
+      updatedUser = inMemUpdated;
+    }
+
+    // Audit Log
+    await this.auditService.log({
+      actorId: adminUser.id || 'usr-admin-1',
+      targetUserId,
+      action: AuditAction.REGISTRATION_REJECTED,
+      metadata: {
+        targetName: updatedUser.name,
+        targetRole: updatedUser.role,
+        rejectionReason: rejectionReason.trim(),
+        rejectedBy: adminUser.name || 'Vanijya Admin',
+      },
+    });
+
+    // Notify User
+    await this.notificationsService.create({
+      userId: targetUserId,
+      title: 'Registration Rejected',
+      message: `Your Vanijya registration was not approved. Reason: ${rejectionReason.trim()}`,
+      type: 'REJECTION',
+    });
+
+    return {
+      message: `User ${updatedUser.name} (${updatedUser.role}) has been rejected.`,
+      user: updatedUser,
+    };
+  }
+
+  // Monitor Crop Lots
+  async getAllLots(query: any = {}) {
+    if (!this.prisma.isConnected) {
       return FALLBACK_LOTS;
     }
+    const where: any = {};
+    if (query.cropId) where.cropId = query.cropId;
+    if (query.status) where.status = query.status;
+    if (query.farmerId) where.farmerId = query.farmerId;
+    return this.prisma.cropLot.findMany({
+      where,
+      include: {
+        crop: true,
+        farmer: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            district: true,
+            state: true,
+            approvalStatus: true,
+          },
+        },
+        bids: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  // Monitor Transactions
+  async getAllTransactions() {
+    if (!this.prisma.isConnected) {
+      return FALLBACK_TRANSACTIONS;
+    }
+    return this.prisma.transaction.findMany({
+      include: {
+        lot: { include: { crop: true } },
+        acceptedBid: { include: { buyer: true } },
+        buyer: true,
+        farmer: true,
+        payment: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  // Global Platform User Management
+  async getAllUsers(role?: Role) {
+    if (!this.prisma.isConnected) {
+      let users = getAllInMemoryUsers();
+      if (role) users = users.filter((u) => u.role === role);
+      return users;
+    }
+    const where: any = role ? { role } : {};
+    return this.prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        email: true,
+        role: true,
+        district: true,
+        state: true,
+        approvalStatus: true,
+        verificationStatus: true,
+        isVerified: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async getAllBids(query: any = {}) {
     if (!this.prisma.isConnected) {
-      let bids = [...FALLBACK_BIDS];
-      if (query.status) bids = bids.filter((b) => b.status === query.status);
-      return bids;
-    }
-
-    try {
-      const where: any = {};
-      if (query.status) where.status = query.status;
-
-      return await this.prisma.bid.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          buyer: {
-            select: { id: true, name: true, email: true, phone: true, district: true, state: true, isVerified: true },
-          },
-          lot: {
-            include: {
-              crop: true,
-              farmer: {
-                select: { id: true, name: true, phone: true, district: true, state: true },
-              },
-            },
-          },
-        },
-      });
-    } catch (err) {
       return FALLBACK_BIDS;
     }
+    const where: any = {};
+    if (query.status) where.status = query.status;
+    if (query.lotId) where.lotId = query.lotId;
+    if (query.buyerId) where.buyerId = query.buyerId;
+    return this.prisma.bid.findMany({
+      where,
+      include: {
+        buyer: { select: { id: true, name: true, organizationName: true, phone: true } },
+        lot: { include: { crop: true, farmer: { select: { id: true, name: true } } } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async getUsers() {
-    if (!this.prisma.isConnected) {
-      const farmers = FALLBACK_USERS.filter((u) => u.role === Role.FARMER).map((f) => ({
-        ...f,
-        activeLots: FALLBACK_LOTS.filter((l) => l.farmerId === f.id && l.status !== CropLotStatus.SOLD).length,
-        soldLots: FALLBACK_LOTS.filter((l) => l.farmerId === f.id && l.status === CropLotStatus.SOLD).length,
-        totalSales: 174000,
-      }));
-
-      const buyers = FALLBACK_USERS.filter((u) => u.role === Role.BUYER).map((b) => ({
-        ...b,
-        activeBids: FALLBACK_BIDS.filter((bid) => bid.buyerId === b.id && bid.status === BidStatus.PENDING).length,
-        acceptedBids: FALLBACK_BIDS.filter((bid) => bid.buyerId === b.id && bid.status === BidStatus.ACCEPTED).length,
-        cancelledBids: FALLBACK_BIDS.filter((bid) => bid.buyerId === b.id && bid.status === BidStatus.WITHDRAWN).length,
-        totalProcurement: 174000,
-      }));
-
-      return { farmers, buyers };
-    }
-
-    try {
-      const users = await this.prisma.user.findMany({
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone: true,
-          role: true,
-          district: true,
-          state: true,
-          location: true,
-          isVerified: true,
-          createdAt: true,
-          cropLots: {
-            select: { id: true, status: true },
-          },
-          bids: {
-            select: { id: true, status: true },
-          },
-          buyerTransactions: {
-            select: { totalAmount: true },
-          },
-          farmerTransactions: {
-            select: { totalAmount: true },
-          },
-        },
-      });
-
-      const farmers = users
-        .filter((u) => u.role === Role.FARMER)
-        .map((f) => ({
-          ...f,
-          activeLots: f.cropLots.filter((l) => l.status !== CropLotStatus.SOLD && l.status !== CropLotStatus.CANCELLED).length,
-          soldLots: f.cropLots.filter((l) => l.status === CropLotStatus.SOLD).length,
-          totalSales: f.farmerTransactions.reduce((acc, t) => acc + t.totalAmount, 0),
-        }));
-
-      const buyers = users
-        .filter((u) => u.role === Role.BUYER)
-        .map((b) => ({
-          ...b,
-          activeBids: b.bids.filter((bid) => bid.status === BidStatus.PENDING).length,
-          acceptedBids: b.bids.filter((bid) => bid.status === BidStatus.ACCEPTED).length,
-          cancelledBids: b.bids.filter((bid) => bid.status === BidStatus.WITHDRAWN).length,
-          totalProcurement: b.buyerTransactions.reduce((acc, t) => acc + t.totalAmount, 0),
-        }));
-
-      return { farmers, buyers };
-    } catch (err) {
-      return this.getUsers();
-    }
+    const farmers = await this.getAllUsers(Role.FARMER);
+    const buyers = await this.getAllUsers(Role.BUYER);
+    return { farmers, buyers };
   }
 
-  async getActivityFeed(limit: number = 50) {
+  async getActivityFeed(limit = 50) {
     return this.auditService.getRecent(limit);
   }
 }

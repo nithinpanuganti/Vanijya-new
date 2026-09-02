@@ -26,7 +26,7 @@ import {
 
 export default function MyBidsPage() {
   const { user, isAuthenticated } = useAuth();
-  const { t } = useLanguage();
+  const { t, tCrop } = useLanguage();
   const { showToast } = useToast();
   const [bids, setBids] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,22 +67,22 @@ export default function MyBidsPage() {
     const maxQty = modifyingBid.lot?.quantity || 1000;
 
     if (isNaN(qty) || qty <= 0) {
-      showToast('Quantity must be greater than 0', 'error');
+      showToast(t.msgQuantityRequired, 'error');
       return;
     }
     if (qty > maxQty) {
-      showToast(`Quantity cannot exceed available lot quantity (${maxQty} ${modifyingBid.lot?.unit || 'Qtl'})`, 'error');
+      showToast(`${t.maxAvailableLabel}: ${maxQty} ${modifyingBid.lot?.unit || t.commonQuintal}`, 'error');
       return;
     }
 
     setIsModifying(true);
     try {
       await api.patch(`/bids/${modifyingBid.id}/quantity`, { quantity: qty });
-      showToast('Bid quantity updated successfully.', 'success');
+      showToast(t.msgBidQuantityUpdatedSuccess, 'success');
       setModifyingBid(null);
       fetchBids();
     } catch (err: any) {
-      showToast(err.message || 'Failed to modify bid quantity', 'error');
+      showToast(err.message || t.msgLoginFailed, 'error');
     } finally {
       setIsModifying(false);
     }
@@ -94,11 +94,11 @@ export default function MyBidsPage() {
     setIsCancelling(true);
     try {
       await api.patch(`/bids/${cancellingBid.id}/cancel`, {});
-      showToast('Bid cancelled successfully.', 'success');
+      showToast(t.msgBidCancelledSuccess, 'success');
       setCancellingBid(null);
       fetchBids();
     } catch (err: any) {
-      showToast(err.message || 'Failed to cancel bid', 'error');
+      showToast(err.message || t.msgLoginFailed, 'error');
     } finally {
       setIsCancelling(false);
     }
@@ -110,14 +110,14 @@ export default function MyBidsPage() {
         <div className="w-14 h-14 bg-amber-100 text-amber-900 rounded-full flex items-center justify-center mx-auto">
           <LogIn className="w-8 h-8" />
         </div>
-        <h2 className="text-xl font-black text-slate-900">Buyer Login Required</h2>
-        <p className="text-xs text-slate-600">Sign in to track your active bids, modify quantities, and manage purchase offers.</p>
+        <h2 className="text-xl font-black text-slate-900">{t.buyerLoginRequiredTitle}</h2>
+        <p className="text-xs text-slate-600">{t.buyerLoginRequiredDesc}</p>
         <div className="pt-2">
           <Link
             href="/login"
             className="block w-full bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-black py-3 rounded-2xl text-xs transition shadow"
           >
-            Go to Sign In
+            {t.btnSignIn}
           </Link>
         </div>
       </div>
@@ -131,7 +131,7 @@ export default function MyBidsPage() {
           <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
             {t.myBidsTitle}
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">Track status of active offers, adjust quantities, and monitor settlements</p>
+          <p className="text-xs text-slate-500 mt-0.5">{t.purchasesSubtitle}</p>
         </div>
 
         <Link
@@ -139,7 +139,7 @@ export default function MyBidsPage() {
           className="bg-gradient-to-r from-amber-400 via-amber-500 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 font-black px-5 py-2.5 rounded-2xl text-xs flex items-center gap-2 shadow-md shadow-amber-500/20 transition self-start md:self-auto"
         >
           <ShoppingBag className="w-4 h-4 text-slate-950" />
-          Explore More Crop Lots
+          {t.exploreMoreCropLots}
         </Link>
       </div>
 
@@ -151,13 +151,13 @@ export default function MyBidsPage() {
       ) : bids.length === 0 ? (
         <div className="bg-white p-10 rounded-3xl border border-amber-200 text-center space-y-3 max-w-md mx-auto">
           <Gavel className="w-10 h-10 text-amber-300 mx-auto" />
-          <h2 className="text-base font-black text-slate-900">No Bids Submitted Yet</h2>
-          <p className="text-xs text-slate-500">Explore the marketplace to place your first direct farm-gate bid.</p>
+          <h2 className="text-base font-black text-slate-900">{t.noBidsYetTitle}</h2>
+          <p className="text-xs text-slate-500">{t.noBidsYetDesc}</p>
           <Link
             href="/browse-lots"
             className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-black px-6 py-3 rounded-2xl text-xs shadow transition"
           >
-            Browse Marketplace
+            {t.browseMarketplaceBtn}
           </Link>
         </div>
       ) : (
@@ -183,25 +183,25 @@ export default function MyBidsPage() {
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="text-base font-black text-slate-900">
-                        {bid.lot?.crop?.name || 'Crop'} ({bid.quantity} {bid.lot?.unit || 'Qtl'})
+                        {tCrop(bid.lot?.crop?.name) || bid.lot?.crop?.name || 'Crop'} ({bid.quantity} {bid.lot?.unit === 'QUINTAL' || !bid.lot?.unit ? t.commonQuintal : bid.lot?.unit === 'KG' ? t.commonKg : bid.lot?.unit === 'TONNE' ? t.commonTonne : bid.lot?.unit})
                       </span>
                       {isWithdrawn ? (
                         <span className="bg-slate-200 text-slate-700 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">
-                          Bid Cancelled by Buyer
+                          {t.bidCancelledByBuyer}
                         </span>
                       ) : (
                         <StatusBadge status={bid.status} type="bid" />
                       )}
                     </div>
-                    <p className="text-xs text-slate-500">Farmer: {bid.lot?.farmer?.name || 'Patel Farms'}</p>
+                    <p className="text-xs text-slate-500">{t.farmerSellerLabel}: {bid.lot?.farmer?.name || t.verifiedFarmerLabel}</p>
                   </div>
 
                   <div className="text-right sm:self-center">
                     <span className="text-lg font-black text-slate-900">
-                      ₹{bid.price} <span className="text-xs font-normal text-slate-400">/ Qtl</span>
+                      ₹{bid.price} <span className="text-xs font-normal text-slate-400">/ {t.commonQuintal}</span>
                     </span>
                     <span className="text-xs font-bold text-slate-500 block">
-                      Total: {formatINR(bid.price * bid.quantity)}
+                      {t.contractTotalLabel}: {formatINR(bid.price * bid.quantity)}
                     </span>
                   </div>
                 </div>
@@ -211,24 +211,24 @@ export default function MyBidsPage() {
                   <div className="pt-3 border-t border-amber-100 flex flex-wrap items-center justify-between gap-2">
                     <span className="text-[11px] text-amber-900 font-bold flex items-center gap-1">
                       <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
-                      Awaiting Farmer Decision
+                      {t.awaitingFarmerDecision}
                     </span>
 
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleOpenModifyModal(bid)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 font-extrabold text-xs hover:bg-amber-100 transition"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 font-extrabold text-xs hover:bg-amber-100 transition cursor-pointer"
                       >
                         <Edit3 className="w-3.5 h-3.5 text-amber-700" />
-                        Modify Quantity
+                        {t.modifyQuantityBtn}
                       </button>
 
                       <button
                         onClick={() => setCancellingBid(bid)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 border border-red-200 text-red-700 font-extrabold text-xs hover:bg-red-100 transition"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 border border-red-200 text-red-700 font-extrabold text-xs hover:bg-red-100 transition cursor-pointer"
                       >
                         <XCircle className="w-3.5 h-3.5 text-red-600" />
-                        Cancel Bid
+                        {t.cancelBidBtn}
                       </button>
                     </div>
                   </div>
@@ -239,13 +239,13 @@ export default function MyBidsPage() {
                   <div className="pt-2 border-t border-amber-100 flex items-center justify-between">
                     <span className="text-xs text-emerald-800 font-extrabold flex items-center gap-1">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      Deal Accepted by Farmer!
+                      {t.dealAcceptedByFarmer}
                     </span>
                     <Link
                       href="/transactions"
                       className="inline-flex items-center gap-1 text-xs font-black text-amber-800 hover:underline"
                     >
-                      View Purchase Contract <ArrowRight className="w-3.5 h-3.5" />
+                      {t.viewPurchaseContractBtn} <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
                 )}
@@ -253,7 +253,7 @@ export default function MyBidsPage() {
                 {/* WITHDRAWN AUDIT NOTE */}
                 {isWithdrawn && (
                   <div className="pt-1 text-[11px] text-slate-400 font-medium italic">
-                    Withdrawn by you on {new Date(bid.updatedAt || bid.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. History preserved for audit records.
+                    {t.withdrawnAuditNote}
                   </div>
                 )}
               </div>
@@ -262,16 +262,14 @@ export default function MyBidsPage() {
         </div>
       )}
 
-      {/* ========================================================= */}
       {/* MODAL 1: MODIFY BID QUANTITY */}
-      {/* ========================================================= */}
       {modifyingBid && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full border border-amber-300 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-amber-100 pb-3">
               <div className="flex items-center gap-2">
                 <Edit3 className="w-5 h-5 text-amber-600" />
-                <h3 className="text-lg font-black text-slate-900">Modify Bid Quantity</h3>
+                <h3 className="text-lg font-black text-slate-900">{t.modifyBidModalTitle}</h3>
               </div>
               <button
                 onClick={() => setModifyingBid(null)}
@@ -284,22 +282,22 @@ export default function MyBidsPage() {
             <form onSubmit={handleConfirmModify} className="space-y-4">
               <div className="p-3.5 bg-amber-50/60 rounded-2xl border border-amber-200 text-xs space-y-1">
                 <div className="flex justify-between font-bold text-slate-700">
-                  <span>Crop:</span>
-                  <span className="text-slate-950 font-black">{modifyingBid.lot?.crop?.name}</span>
+                  <span>{t.cropLabel}:</span>
+                  <span className="text-slate-950 font-black">{tCrop(modifyingBid.lot?.crop?.name)}</span>
                 </div>
                 <div className="flex justify-between font-bold text-slate-700">
-                  <span>Offer Rate:</span>
-                  <span className="text-slate-950 font-black">₹{modifyingBid.price}/Qtl</span>
+                  <span>{t.expectedRateLabel}:</span>
+                  <span className="text-slate-950 font-black">₹{modifyingBid.price}/{t.commonQuintal}</span>
                 </div>
                 <div className="flex justify-between font-bold text-slate-700">
-                  <span>Total Available Lot:</span>
-                  <span className="text-amber-900 font-black">{modifyingBid.lot?.quantity || 100} {modifyingBid.lot?.unit || 'Qtl'}</span>
+                  <span>{t.maxAvailableLabel}:</span>
+                  <span className="text-amber-900 font-black">{modifyingBid.lot?.quantity || 100} {modifyingBid.lot?.unit || t.commonQuintal}</span>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-black text-slate-700 mb-1">
-                  New Quantity ({modifyingBid.lot?.unit || 'Quintals'})
+                  {t.newQuantityLabel} ({modifyingBid.lot?.unit || t.commonQuintal})
                 </label>
                 <input
                   type="number"
@@ -310,13 +308,10 @@ export default function MyBidsPage() {
                   onChange={(e) => setNewQuantity(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-amber-50/40 border border-amber-300 rounded-xl text-base font-black focus:bg-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
                 />
-                <span className="text-[10px] text-slate-400 mt-1 block">
-                  Current bid: {modifyingBid.quantity} {modifyingBid.lot?.unit || 'Qtl'}. Max limit: {modifyingBid.lot?.quantity || 100} {modifyingBid.lot?.unit || 'Qtl'}.
-                </span>
               </div>
 
               <div className="p-3 bg-amber-100/70 rounded-xl border border-amber-300 text-xs flex items-center justify-between">
-                <span className="font-bold text-amber-950">New Total Bid Value:</span>
+                <span className="font-bold text-amber-950">{t.newTotalBidValue}:</span>
                 <span className="text-base font-black text-slate-950">
                   {formatINR(modifyingBid.price * (parseFloat(newQuantity) || 0))}
                 </span>
@@ -326,22 +321,22 @@ export default function MyBidsPage() {
                 <button
                   type="button"
                   onClick={() => setModifyingBid(null)}
-                  className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 transition"
+                  className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 transition cursor-pointer"
                 >
-                  Cancel
+                  {t.btnCancel}
                 </button>
                 <button
                   type="submit"
                   disabled={isModifying}
-                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-black text-xs shadow-md hover:from-amber-300 hover:to-yellow-400 transition flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 font-black text-xs shadow-md hover:from-amber-300 hover:to-yellow-400 transition flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   {isModifying ? (
                     <>
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      Updating...
+                      {t.commonLoading}
                     </>
                   ) : (
-                    'Confirm Modification'
+                    t.confirmModificationBtn
                   )}
                 </button>
               </div>
@@ -350,9 +345,7 @@ export default function MyBidsPage() {
         </div>
       )}
 
-      {/* ========================================================= */}
       {/* MODAL 2: CANCEL BID CONFIRMATION */}
-      {/* ========================================================= */}
       {cancellingBid && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
           <div className="bg-white rounded-3xl p-6 max-w-md w-full border border-red-200 shadow-2xl space-y-4">
@@ -361,53 +354,53 @@ export default function MyBidsPage() {
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-base font-black text-slate-900">Cancel this Bid?</h3>
-                <p className="text-[11px] text-slate-500">This action will withdraw your offer from the farmer</p>
+                <h3 className="text-base font-black text-slate-900">{t.cancelBidModalTitle}</h3>
+                <p className="text-[11px] text-slate-500">{t.cancelBidModalSubtitle}</p>
               </div>
             </div>
 
             <div className="p-3.5 bg-red-50/50 rounded-2xl border border-red-100 text-xs space-y-1.5">
               <div className="flex justify-between font-bold text-slate-700">
-                <span>Produce:</span>
-                <span className="text-slate-950 font-black">{cancellingBid.lot?.crop?.name}</span>
+                <span>{t.produceLabel}:</span>
+                <span className="text-slate-950 font-black">{tCrop(cancellingBid.lot?.crop?.name)}</span>
               </div>
               <div className="flex justify-between font-bold text-slate-700">
-                <span>Quantity:</span>
-                <span className="text-slate-950 font-black">{cancellingBid.quantity} {cancellingBid.lot?.unit || 'Qtl'}</span>
+                <span>{t.bidQuantityLabel}:</span>
+                <span className="text-slate-950 font-black">{cancellingBid.quantity} {cancellingBid.lot?.unit || t.commonQuintal}</span>
               </div>
               <div className="flex justify-between font-bold text-slate-700">
-                <span>Bid Price:</span>
-                <span className="text-slate-950 font-black">₹{cancellingBid.price}/Qtl</span>
+                <span>{t.yourBidPriceLabel}:</span>
+                <span className="text-slate-950 font-black">₹{cancellingBid.price}/{t.commonQuintal}</span>
               </div>
               <div className="flex justify-between font-bold text-slate-700 border-t border-red-200/50 pt-1">
-                <span>Total Commitment:</span>
+                <span>{t.totalCommitmentLabel}:</span>
                 <span className="text-red-700 font-black">{formatINR(cancellingBid.price * cancellingBid.quantity)}</span>
               </div>
             </div>
 
             <p className="text-xs text-slate-500">
-              The bid status will be updated to <strong>WITHDRAWN</strong> and preserved in the audit log. The farmer will be notified that this offer was retracted.
+              {t.withdrawnAuditExplanation}
             </p>
 
             <div className="flex items-center gap-3 pt-2">
               <button
                 onClick={() => setCancellingBid(null)}
-                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 transition"
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 text-slate-700 font-bold text-xs hover:bg-slate-50 transition cursor-pointer"
               >
-                Keep Bid Active
+                {t.keepBidActiveBtn}
               </button>
               <button
                 onClick={handleConfirmCancel}
                 disabled={isCancelling}
-                className="flex-1 py-2.5 rounded-xl bg-red-600 text-white font-black text-xs shadow-md hover:bg-red-700 transition flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 rounded-xl bg-red-600 text-white font-black text-xs shadow-md hover:bg-red-700 transition flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 {isCancelling ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    Cancelling...
+                    {t.commonLoading}
                   </>
                 ) : (
-                  'Yes, Cancel Bid'
+                  t.yesCancelBidBtn
                 )}
               </button>
             </div>

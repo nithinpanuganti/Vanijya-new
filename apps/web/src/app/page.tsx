@@ -24,7 +24,7 @@ import {
 
 export default function UnifiedHomePage() {
   const { user, isAuthenticated } = useAuth();
-  const { t } = useLanguage();
+  const { t, tCrop } = useLanguage();
   const [heroPriceData, setHeroPriceData] = useState<any>(null);
 
   useEffect(() => {
@@ -43,7 +43,7 @@ export default function UnifiedHomePage() {
 
   return (
     <div className="space-y-12 animate-in fade-in duration-300">
-      {/* 1. Hero Section: "Know the Best Price Before You Sell." */}
+      {/* 1. Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-br from-amber-950 via-slate-900 to-amber-900 rounded-3xl p-6 md:p-12 text-white shadow-2xl border border-amber-500/30">
         <div className="max-w-3xl space-y-4">
           <div className="inline-flex items-center gap-2 bg-amber-400/20 text-amber-300 border border-amber-400/30 text-xs font-black px-3.5 py-1 rounded-full uppercase tracking-wider">
@@ -78,7 +78,7 @@ export default function UnifiedHomePage() {
             </Link>
 
             <Link
-              href={isAuthenticated && user?.role === 'BUYER' ? '/browse-lots' : '/browse-lots'}
+              href="/browse-lots"
               className="bg-slate-900/90 hover:bg-slate-800 text-amber-200 border border-amber-500/30 font-black px-6 py-3.5 rounded-2xl text-sm flex items-center gap-2 transition"
             >
               <ShoppingBag className="w-4 h-4 text-amber-400" />
@@ -91,35 +91,37 @@ export default function UnifiedHomePage() {
         <div className="mt-8 pt-6 border-t border-amber-500/20 grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-amber-500/20 space-y-1">
             <div className="flex items-center justify-between text-xs text-amber-200 font-bold">
-              <span>Tomato (टमाटर) Today</span>
+              <span>{tCrop('Tomato')} ({t.todayRate})</span>
               <span className="text-amber-400 font-black">▲ +6.8%</span>
             </div>
             <div className="text-2xl font-black text-white">
-              ₹{heroPriceData?.todayPrice?.modalPrice || 2233} <span className="text-xs font-normal text-amber-200">/ Qtl</span>
+              ₹{heroPriceData?.todayPrice?.modalPrice || 2233} <span className="text-xs font-normal text-amber-200">/ {t.commonQuintal}</span>
             </div>
-            <p className="text-[10px] text-amber-200/80">Nashik APMC Main Yard</p>
+            <p className="text-[10px] text-amber-200/80">Nashik APMC</p>
           </div>
 
           <div className="bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-amber-500/20 space-y-1">
             <div className="flex items-center justify-between text-xs text-amber-200 font-bold">
-              <span>Spatial Arbitrage</span>
-              <span className="text-yellow-400 font-black">+₹96 Net Gain</span>
+              <span>{t.nearbyArbitrage}</span>
+              <span className="text-yellow-400 font-black">+₹96 {t.netGain}</span>
             </div>
             <div className="text-2xl font-black text-yellow-300">
-              ₹2,380 <span className="text-xs font-normal text-amber-200">/ Qtl</span>
+              ₹2,380 <span className="text-xs font-normal text-amber-200">/ {t.commonQuintal}</span>
             </div>
-            <p className="text-[10px] text-amber-200/80">Lasalgaon APMC (24 km transport deducted)</p>
+            <p className="text-[10px] text-amber-200/80">Lasalgaon APMC (24 {t.commonKm})</p>
           </div>
 
           <div className="bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-amber-500/20 space-y-1">
             <div className="flex items-center justify-between text-xs text-amber-200 font-bold">
-              <span>Best Selling Window</span>
-              <span className="bg-amber-400/30 text-amber-300 text-[9px] font-black px-1.5 py-0.5 rounded">OPTIMAL</span>
+              <span>{t.sellingWindow}</span>
+              <span className="bg-amber-400/30 text-amber-300 text-[9px] font-black px-1.5 py-0.5 rounded">
+                {t.sellingWindowOptimal}
+              </span>
             </div>
             <div className="text-sm font-black text-white leading-snug">
               {heroPriceData?.sellingWindow?.recommendation || 'Sell within next 24-48 Hours'}
             </div>
-            <p className="text-[10px] text-amber-300">Price momentum peak detected</p>
+            <p className="text-[10px] text-amber-300">{t.sellingWindowDesc}</p>
           </div>
         </div>
       </div>
@@ -187,19 +189,19 @@ export default function UnifiedHomePage() {
           <ul className="space-y-3 text-xs font-semibold text-amber-950">
             <li className="flex items-center gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-amber-700 shrink-0" />
-              <span><strong>0% Intermediary Deductions:</strong> No arhtiya cuts, no unrecorded weighing charges.</span>
+              <span><strong>{t.farmerBenefit1Title}:</strong> {t.farmerBenefit1Desc}</span>
             </li>
             <li className="flex items-center gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-amber-700 shrink-0" />
-              <span><strong>Spatial Arbitrage Discovery:</strong> Find regional mandis where price exceeds transport cost.</span>
+              <span><strong>{t.farmerBenefit2Title}:</strong> {t.farmerBenefit2Desc}</span>
             </li>
             <li className="flex items-center gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-amber-700 shrink-0" />
-              <span><strong>Explainable Selling Timing:</strong> Real-time guidance on whether to sell today or hold.</span>
+              <span><strong>{t.farmerBenefit3Title}:</strong> {t.farmerBenefit3Desc}</span>
             </li>
             <li className="flex items-center gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-amber-700 shrink-0" />
-              <span><strong>Instant Digital Confirmation:</strong> 1-tap offer acceptance with recorded payment UTR.</span>
+              <span><strong>{t.farmerBenefit4Title}:</strong> {t.farmerBenefit4Desc}</span>
             </li>
           </ul>
 
@@ -208,7 +210,7 @@ export default function UnifiedHomePage() {
               href="/prices"
               className="inline-flex items-center gap-1.5 text-xs font-black text-amber-900 hover:underline"
             >
-              Explore Price Discovery →
+              {t.explorePriceDiscoveryLink}
             </Link>
           </div>
         </div>
@@ -225,19 +227,19 @@ export default function UnifiedHomePage() {
           <ul className="space-y-3 text-xs font-semibold text-slate-800">
             <li className="flex items-center gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
-              <span><strong>Direct Farm-Gate Sourcing:</strong> Bypass multiple aggregator markups.</span>
+              <span><strong>{t.buyerBenefit1Title}:</strong> {t.buyerBenefit1Desc}</span>
             </li>
             <li className="flex items-center gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
-              <span><strong>Quality Graded Batches:</strong> Verified Grade A, B, C classifications with harvest dates.</span>
+              <span><strong>{t.buyerBenefit2Title}:</strong> {t.buyerBenefit2Desc}</span>
             </li>
             <li className="flex items-center gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
-              <span><strong>Live Mandi Benchmark Comparison:</strong> Make data-backed sourcing offers.</span>
+              <span><strong>{t.buyerBenefit3Title}:</strong> {t.buyerBenefit3Desc}</span>
             </li>
             <li className="flex items-center gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
-              <span><strong>Structured Contracts:</strong> Clear purchase orders with digital settlement tracking.</span>
+              <span><strong>{t.buyerBenefit4Title}:</strong> {t.buyerBenefit4Desc}</span>
             </li>
           </ul>
 
@@ -246,7 +248,7 @@ export default function UnifiedHomePage() {
               href="/browse-lots"
               className="inline-flex items-center gap-1.5 text-xs font-black text-amber-900 hover:underline"
             >
-              Explore Agricultural Marketplace →
+              {t.exploreMarketplaceLink}
             </Link>
           </div>
         </div>
@@ -266,10 +268,10 @@ export default function UnifiedHomePage() {
 
         <div className="flex items-center gap-3 shrink-0">
           <span className="bg-amber-50 text-amber-900 text-[11px] font-bold px-3 py-1.5 rounded-xl border border-amber-200">
-            Agmarknet Data Synced
+            {t.badgeAgmarknetSynced}
           </span>
           <span className="bg-amber-50 text-amber-900 text-[11px] font-bold px-3 py-1.5 rounded-xl border border-amber-200">
-            e-NAM Compliant
+            {t.badgeEnamCompliant}
           </span>
         </div>
       </div>

@@ -1,4 +1,14 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Param,
+  Body,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AdminService } from './admin.service';
 import { TransactionsService } from '../transactions/transactions.service';
@@ -24,6 +34,40 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Admin statistics returned' })
   getDashboardStats() {
     return this.adminService.getDashboardStats();
+  }
+
+  @Get('registrations')
+  @ApiOperation({ summary: 'Get all pending/approved/rejected registration requests with filters' })
+  @ApiResponse({ status: 200, description: 'List of registrations returned' })
+  getRegistrations(@Query() query: any) {
+    return this.adminService.getRegistrations(query);
+  }
+
+  @Get('registrations/:id')
+  @ApiOperation({ summary: 'Get detailed application for a specific registration request' })
+  @ApiResponse({ status: 200, description: 'Registration detail returned' })
+  getRegistrationById(@Param('id') id: string) {
+    return this.adminService.getRegistrationById(id);
+  }
+
+  @Patch('users/:id/approve')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Approve a farmer or buyer registration' })
+  @ApiResponse({ status: 200, description: 'User successfully approved' })
+  approveUser(@Param('id') id: string, @CurrentUser() adminUser: any) {
+    return this.adminService.approveUser(id, adminUser);
+  }
+
+  @Patch('users/:id/reject')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reject a farmer or buyer registration with a reason' })
+  @ApiResponse({ status: 200, description: 'User successfully rejected' })
+  rejectUser(
+    @Param('id') id: string,
+    @Body('rejectionReason') rejectionReason: string,
+    @CurrentUser() adminUser: any,
+  ) {
+    return this.adminService.rejectUser(id, rejectionReason, adminUser);
   }
 
   @Get('lots')

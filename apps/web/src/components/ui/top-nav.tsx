@@ -19,13 +19,14 @@ import {
   User,
   LogIn,
   LogOut,
-  Sparkles,
+  UserPlus,
+  ShieldAlert,
 } from 'lucide-react';
 
 export function TopNav() {
   const pathname = usePathname();
   const { user, isAuthenticated, logout } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   let navItems: { label: string; href: string; icon: any }[] = [];
 
@@ -55,6 +56,7 @@ export function TopNav() {
   } else if (user.role === 'ADMIN') {
     navItems = [
       { label: t.navDashboard, href: '/dashboard', icon: LayoutDashboard },
+      { label: t.navAdminRegistrations, href: '/admin/registrations', icon: ShieldAlert },
       { label: t.navPrices, href: '/prices', icon: TrendingUp },
       { label: t.navMarketplace, href: '/browse-lots', icon: ShoppingCart },
       { label: t.navProfile, href: '/profile', icon: User },
@@ -71,8 +73,10 @@ export function TopNav() {
           </div>
           <div>
             <div className="font-black text-base md:text-lg tracking-tight flex items-center gap-1.5 leading-none text-white">
-              Vanijya
-              <span className="text-amber-400 text-xs font-black">वाणिज्य</span>
+              {language === 'hi' ? 'वाणिज्य' : language === 'te' ? 'వాణిజ్య' : 'Vanijya'}
+              <span className="text-amber-400 text-xs font-black">
+                {language === 'hi' ? 'Vanijya' : language === 'te' ? 'Vanijya' : 'वाणिज्य'}
+              </span>
             </div>
             <p className="text-[10px] text-amber-200/80 mt-0.5 leading-none hidden sm:block">
               {t.brandSubtitle}
@@ -84,7 +88,9 @@ export function TopNav() {
         <nav className="hidden md:flex items-center gap-1.5">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href || (item.href !== '/' && item.href !== '/dashboard' && pathname.startsWith(item.href));
+            const isActive =
+              pathname === item.href ||
+              (item.href !== '/' && item.href !== '/dashboard' && pathname.startsWith(item.href));
 
             return (
               <Link
@@ -114,7 +120,9 @@ export function TopNav() {
                 className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 px-3 py-1.5 rounded-full text-xs font-semibold border border-amber-500/30 transition"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                <span className="max-w-[110px] truncate text-slate-200">{user.name.split(' ')[0]}</span>
+                <span className="max-w-[110px] truncate text-slate-200">
+                  {user.name.split(' ')[0]}
+                </span>
                 <span className="bg-amber-400 text-slate-950 text-[9px] font-black px-1.5 py-0.2 rounded-full uppercase">
                   {user.role}
                 </span>
@@ -128,13 +136,22 @@ export function TopNav() {
               </button>
             </div>
           ) : (
-            <Link
-              href="/login"
-              className="flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-slate-950 px-4 py-1.5 rounded-full text-xs font-black transition shadow-md shadow-amber-400/20"
-            >
-              <LogIn className="w-3.5 h-3.5" />
-              {t.navLogin}
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/login"
+                className="flex items-center gap-1.5 text-slate-300 hover:text-white px-3 py-1.5 rounded-full text-xs font-bold transition"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                {t.navLogin}
+              </Link>
+              <Link
+                href="/signup"
+                className="flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-slate-950 px-4 py-1.5 rounded-full text-xs font-black transition shadow-md shadow-amber-400/20"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                {t.navSignup}
+              </Link>
+            </div>
           )}
         </div>
       </div>

@@ -19,12 +19,12 @@ export function ImpactCard() {
               {t.impactTitle}
             </h3>
             <p className="text-[11px] text-amber-200/90">
-              National Market Linkages & Middleman-Free Direct Trade
+              {t.impactSubtitle}
             </p>
           </div>
         </div>
         <span className="bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider shadow-md">
-          0% Commission
+          {t.zeroCommissionBadge}
         </span>
       </div>
 

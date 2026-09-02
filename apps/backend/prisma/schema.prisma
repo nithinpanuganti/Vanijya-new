@@ -16,6 +16,18 @@ enum Role {
   ADMIN
 }
 
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
 enum CropLotStatus {
   OPEN
   BIDDING
@@ -69,38 +81,85 @@ enum AuditAction {
   BID_ACCEPTED
   BID_REJECTED
   PAYMENT_PAID
+  REGISTRATION_SUBMITTED
+  REGISTRATION_APPROVED
+  REGISTRATION_REJECTED
+  PROFILE_UPDATED
+  PROFILE_PHOTO_UPDATED
+  LOCATION_UPDATED
+  LOGIN
 }
 
 model User {
-  id           String   @id @default(uuid())
-  name         String
-  phone        String?  @unique
-  email        String?  @unique
-  passwordHash String
-  role         Role     @default(FARMER)
-  district     String?
-  state        String?
-  location     String?
-  isVerified   Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                 String             @id @default(uuid())
+  name               String
+  phone              String?            @unique
+  email              String?            @unique
+  passwordHash       String
+  role               Role               @default(FARMER)
+  district           String?
+  state              String?
+  village            String?
+  location           String?
+  latitude           Float?
+  longitude          Float?
+  profilePhotoUrl    String?
+  approvalStatus     ApprovalStatus     @default(PENDING)
+  verificationStatus VerificationStatus @default(PENDING)
+  isVerified         Boolean            @default(false)
+  rejectionReason    String?
+  approvedBy         String?
+  approvedAt         DateTime?
+
+  // Farmer specific fields
+  primaryCrop String?
+  farmSize    Float?
+  kccNumber   String?
+  apmcNumber  String?
+
+  // Buyer specific fields
+  organizationName  String?
+  contactPerson     String?
+  businessType      String?
+  gstin             String?
+  fssaiNumber       String?
+  warehouseLocation String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   cropLots           CropLot[]
   bids               Bid[]
-  buyerTransactions  Transaction[] @relation("BuyerTransactions")
-  farmerTransactions Transaction[] @relation("FarmerTransactions")
-  auditLogs          AuditLog[]
+  buyerTransactions  Transaction[]  @relation("BuyerTransactions")
+  farmerTransactions Transaction[]  @relation("FarmerTransactions")
+  auditLogs          AuditLog[]     @relation("ActorAuditLogs")
+  targetAuditLogs    AuditLog[]     @relation("TargetUserAuditLogs")
+  notifications      Notification[]
 
   @@map("users")
 }
 
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("SYSTEM")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("notifications")
+}
+
 model Crop {
-  id          String    @id @default(uuid())
-  name        String    @unique
+  id          String   @id @default(uuid())
+  name        String   @unique
   category    String
-  defaultUnit CropUnit  @default(QUINTAL)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  defaultUnit CropUnit @default(QUINTAL)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   cropLots    CropLot[]
   mandiPrices MandiPrice[]
@@ -227,23 +286,26 @@ model Payment {
 }
 
 model AuditLog {
-  id          String      @id @default(uuid())
-  bidId       String?
-  bid         Bid?        @relation(fields: [bidId], references: [id], onDelete: SetNull)
-  lotId       String?
-  lot         CropLot?    @relation(fields: [lotId], references: [id], onDelete: SetNull)
-  actorId     String
-  actor       User        @relation(fields: [actorId], references: [id], onDelete: Cascade)
-  action      AuditAction
-  oldQuantity Float?
-  newQuantity Float?
-  oldStatus   String?
-  newStatus   String?
-  price       Float?
-  metadata    String?
-  createdAt   DateTime    @default(now())
+  id           String      @id @default(uuid())
+  bidId        String?
+  bid          Bid?        @relation(fields: [bidId], references: [id], onDelete: SetNull)
+  lotId        String?
+  lot          CropLot?    @relation(fields: [lotId], references: [id], onDelete: SetNull)
+  actorId      String
+  actor        User        @relation("ActorAuditLogs", fields: [actorId], references: [id], onDelete: Cascade)
+  targetUserId String?
+  targetUser   User?       @relation("TargetUserAuditLogs", fields: [targetUserId], references: [id], onDelete: SetNull)
+  action       AuditAction
+  oldQuantity  Float?
+  newQuantity  Float?
+  oldStatus    String?
+  newStatus    String?
+  price        Float?
+  metadata     String?
+  createdAt    DateTime    @default(now())
 
   @@index([actorId])
+  @@index([targetUserId])
   @@index([lotId])
   @@index([bidId])
   @@index([action])

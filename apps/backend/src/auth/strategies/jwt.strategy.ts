@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PrismaService } from '../../prisma/prisma.service';
-import { FALLBACK_USERS } from '../auth.service';
+import { findInMemoryUserById, getAllInMemoryUsers } from '../fallback-users';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -15,39 +15,56 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: { sub: string; role: string }) {
-    if (!this.prisma.isConnected) {
-      const fallbackUser = FALLBACK_USERS.find((u) => u.id === payload.sub);
-      if (fallbackUser) {
-        const { password, ...safeUser } = fallbackUser;
-        return safeUser;
+    // 1. Try PostgreSQL database lookup
+    if (this.prisma.isConnected) {
+      try {
+        const user = await this.prisma.user.findUnique({
+          where: { id: payload.sub },
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            email: true,
+            role: true,
+            district: true,
+            state: true,
+            village: true,
+            location: true,
+            latitude: true,
+            longitude: true,
+            profilePhotoUrl: true,
+            approvalStatus: true,
+            verificationStatus: true,
+            isVerified: true,
+            rejectionReason: true,
+            primaryCrop: true,
+            farmSize: true,
+            kccNumber: true,
+            apmcNumber: true,
+            organizationName: true,
+            contactPerson: true,
+            businessType: true,
+            gstin: true,
+            fssaiNumber: true,
+            warehouseLocation: true,
+          },
+        });
+
+        if (user) {
+          return user;
+        }
+      } catch {
+        // Fall through to in-memory lookup
       }
     }
 
-    try {
-      const user = await this.prisma.user.findUnique({
-        where: { id: payload.sub },
-        select: {
-          id: true,
-          name: true,
-          phone: true,
-          email: true,
-          role: true,
-          district: true,
-          state: true,
-          location: true,
-          isVerified: true,
-        },
-      });
-
-      if (user) return user;
-    } catch (err) {
-      const fallbackUser = FALLBACK_USERS.find((u) => u.id === payload.sub);
-      if (fallbackUser) {
-        const { password, ...safeUser } = fallbackUser;
-        return safeUser;
-      }
+    // 2. Try global in-memory registry lookup (for demo and offline resilience)
+    const inMemUser = findInMemoryUserById(payload.sub) || getAllInMemoryUsers().find((u) => u.id === payload.sub);
+    if (inMemUser) {
+      const { password, passwordHash, ...safeUser } = inMemUser;
+      return safeUser;
     }
 
-    throw new UnauthorizedException('User not found or session expired');
+    throw new UnauthorizedException('Session expired. Please sign in again.');
   }
 }

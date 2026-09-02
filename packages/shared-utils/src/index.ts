@@ -3,6 +3,8 @@
  * Smart India Hackathon (SIH) Problem Statement 26132
  */
 
+export * from './locations';
+
 /**
  * Formats a numeric value as Indian Rupee (INR) currency.
  * Example: 25000 -> ₹25,000

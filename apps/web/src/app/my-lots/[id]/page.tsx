@@ -28,7 +28,7 @@ export default function LotDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
-  const { t } = useLanguage();
+  const { t, tCrop } = useLanguage();
   const { showToast } = useToast();
 
   const [lot, setLot] = useState<any>(null);
@@ -60,10 +60,10 @@ export default function LotDetailsPage() {
     setActionLoading(bidId);
     try {
       await api.patch(`/bids/${bidId}/accept`);
-      showToast('Offer accepted! Purchase contract generated.', 'success');
+      showToast(t.msgOfferAcceptedSuccess, 'success');
       fetchLotData();
     } catch (err: any) {
-      showToast(err.message || 'Failed to accept bid', 'error');
+      showToast(err.message || t.msgLoginFailed, 'error');
     } finally {
       setActionLoading(null);
     }
@@ -73,10 +73,10 @@ export default function LotDetailsPage() {
     setActionLoading(bidId);
     try {
       await api.patch(`/bids/${bidId}/reject`);
-      showToast('Bid rejected.', 'info');
+      showToast(t.msgOfferRejectedSuccess, 'info');
       fetchLotData();
     } catch (err: any) {
-      showToast(err.message || 'Failed to reject bid', 'error');
+      showToast(err.message || t.msgLoginFailed, 'error');
     } finally {
       setActionLoading(null);
     }
@@ -94,9 +94,9 @@ export default function LotDetailsPage() {
   if (!lot) {
     return (
       <div className="bg-white p-8 rounded-3xl border border-amber-200 text-center space-y-4">
-        <h2 className="text-xl font-black text-slate-900">Crop Lot Not Found</h2>
+        <h2 className="text-xl font-black text-slate-900">{t.lotNotFoundTitle}</h2>
         <Link href="/my-lots" className="inline-block text-xs font-bold text-amber-800 hover:underline">
-          ← Return to My Lots
+          {t.returnToMyLots}
         </Link>
       </div>
     );
@@ -108,7 +108,7 @@ export default function LotDetailsPage() {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <Link href="/my-lots" className="inline-flex items-center gap-1 text-xs text-amber-800 font-bold hover:underline">
-        <ArrowLeft className="w-3.5 h-3.5" /> Back to My Lots
+        <ArrowLeft className="w-3.5 h-3.5" /> {t.backToMyLots}
       </Link>
 
       {/* Lot Summary Card */}
@@ -116,10 +116,10 @@ export default function LotDetailsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-100 pb-4">
           <div className="space-y-1">
             <span className="text-xs font-bold text-slate-400 uppercase tracking-wide">
-              Lot #{lot.id?.substring(0, 8)}
+              {t.contractNumberLabel} #{lot.id?.substring(0, 8)}
             </span>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-              {lot.crop?.name || 'Crop'} — {lot.quantity} {lot.unit || 'Quintals'}
+              {tCrop(lot.crop?.name) || lot.crop?.name || 'Crop'} — {lot.quantity} {lot.unit === 'QUINTAL' || !lot.unit ? t.commonQuintal : lot.unit === 'KG' ? t.commonKg : lot.unit === 'TONNE' ? t.commonTonne : lot.unit}
             </h1>
           </div>
           <StatusBadge status={lot.status} />
@@ -127,28 +127,30 @@ export default function LotDetailsPage() {
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
           <div className="bg-amber-50/50 p-3 rounded-2xl border border-amber-100">
-            <span className="text-slate-400 font-bold block text-[10px]">Expected Rate</span>
-            <span className="font-black text-slate-900 text-sm">₹{lot.expectedPrice}/Qtl</span>
+            <span className="text-slate-400 font-bold block text-[10px]">{t.expectedRateLabel}</span>
+            <span className="font-black text-slate-900 text-sm">₹{lot.expectedPrice}/{t.commonQuintal}</span>
           </div>
           <div className="bg-amber-50/50 p-3 rounded-2xl border border-amber-100">
-            <span className="text-slate-400 font-bold block text-[10px]">Quality Grade</span>
-            <span className="font-black text-amber-800 text-sm">{lot.qualityGrade || 'GRADE_A'}</span>
+            <span className="text-slate-400 font-bold block text-[10px]">{t.qualityGradeLabel}</span>
+            <span className="font-black text-amber-800 text-sm">
+              {lot.qualityGrade === 'GRADE_A' ? t.commonGradeA : lot.qualityGrade === 'GRADE_B' ? t.commonGradeB : lot.qualityGrade === 'GRADE_C' ? t.commonGradeC : (lot.qualityGrade || t.commonGradeA)}
+            </span>
           </div>
           <div className="bg-amber-50/50 p-3 rounded-2xl border border-amber-100">
-            <span className="text-slate-400 font-bold block text-[10px]">Estimated Lot Value</span>
+            <span className="text-slate-400 font-bold block text-[10px]">{t.estimatedTotalValue}</span>
             <span className="font-black text-slate-900 text-sm">
               ₹{(lot.expectedPrice * lot.quantity)?.toLocaleString('en-IN')}
             </span>
           </div>
           <div className="bg-amber-50/50 p-3 rounded-2xl border border-amber-100">
-            <span className="text-slate-400 font-bold block text-[10px]">Commission Cut</span>
-            <span className="font-black text-amber-600 text-sm">0% (Direct)</span>
+            <span className="text-slate-400 font-bold block text-[10px]">{t.commissionCutLabel}</span>
+            <span className="font-black text-amber-600 text-sm">{t.zeroDirectLabel}</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2 text-xs text-slate-600">
           <MapPin className="w-4 h-4 text-slate-400 shrink-0" />
-          <span>Farm Pickup Address: <strong>{lot.location || 'Nashik Farm Gate'}</strong></span>
+          <span>{t.farmPickupAddressLabel}: <strong>{lot.location || 'Nashik Farm Gate'}</strong></span>
         </div>
       </div>
 
@@ -158,28 +160,28 @@ export default function LotDetailsPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <FileCheck className="w-5 h-5 text-yellow-300" />
-              <h2 className="text-lg font-black text-white">Purchase Contract & Settlement Timeline</h2>
+              <h2 className="text-lg font-black text-white">{t.purchaseContractTimeline}</h2>
             </div>
             <span className="bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-950 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase">
-              {lot.transaction.status || 'COMPLETED'}
+              {lot.transaction.status || t.statusContractCompleted}
             </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-white/10 p-4 rounded-2xl backdrop-blur-sm border border-white/10">
             <div>
-              <span className="text-amber-200 block text-[10px]">Agreed Deal Rate</span>
-              <span className="text-base font-black text-white">₹{lot.transaction.agreedPrice}/Qtl</span>
+              <span className="text-amber-200 block text-[10px]">{t.agreedDealRateLabel}</span>
+              <span className="text-base font-black text-white">₹{lot.transaction.agreedPrice}/{t.commonQuintal}</span>
             </div>
             <div>
-              <span className="text-amber-200 block text-[10px]">Total Contract Amount</span>
+              <span className="text-amber-200 block text-[10px]">{t.totalContractAmountLabel}</span>
               <span className="text-base font-black text-yellow-300">
                 ₹{lot.transaction.totalAmount?.toLocaleString('en-IN')}
               </span>
             </div>
             <div>
-              <span className="text-amber-200 block text-[10px]">Payment Settlement</span>
+              <span className="text-amber-200 block text-[10px]">{t.paymentSettlementLabel}</span>
               <span className="text-base font-black text-amber-300">
-                {lot.transaction.payment?.status === 'PAID' ? 'PAID & VERIFIED' : 'IN PROCESS'}
+                {lot.transaction.payment?.status === 'PAID' ? t.paidAndVerifiedLabel : t.inProcessLabel}
               </span>
             </div>
           </div>
@@ -192,14 +194,14 @@ export default function LotDetailsPage() {
           <h2 className="text-xl font-black text-slate-900 tracking-tight">
             {t.incomingOffersTitle} ({bids.length})
           </h2>
-          <span className="text-xs text-slate-500 font-medium">100% Direct Buyer Offers</span>
+          <span className="text-xs text-slate-500 font-medium">{t.directBuyerOffersSubtitle}</span>
         </div>
 
         {bids.length === 0 ? (
           <div className="bg-white p-8 rounded-3xl border border-amber-200 text-center space-y-2 text-xs text-slate-500">
             <Clock className="w-8 h-8 mx-auto text-amber-300 mb-1" />
-            <p className="font-bold text-slate-700">Awaiting Buyer Offers</p>
-            <p>Your listing is broadcast to institutional procurers. Offers will appear here in real-time.</p>
+            <p className="font-bold text-slate-700">{t.awaitingBuyerOffersTitle}</p>
+            <p>{t.awaitingBuyerOffersDesc}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -222,11 +224,11 @@ export default function LotDetailsPage() {
                       <div className="flex items-center gap-2">
                         <Building2 className="w-4 h-4 text-amber-600" />
                         <span className="font-extrabold text-slate-900 text-sm">
-                          {bid.buyer?.name || 'Verified Wholesale Buyer'}
+                          {bid.buyer?.name || t.verifiedBadge}
                         </span>
                         {isHighest && (
                           <span className="bg-amber-400 text-slate-950 font-black text-[9px] px-2 py-0.5 rounded-full uppercase">
-                            HIGHEST OFFER
+                            {t.highestOfferBadge}
                           </span>
                         )}
                       </div>
@@ -235,10 +237,10 @@ export default function LotDetailsPage() {
 
                     <div className="text-right sm:self-center">
                       <div className="text-xl font-black text-slate-900">
-                        ₹{bid.price} <span className="text-xs font-normal text-slate-500">/ Qtl</span>
+                        ₹{bid.price} <span className="text-xs font-normal text-slate-500">/ {t.commonQuintal}</span>
                       </div>
                       <span className="text-[11px] text-slate-500 font-bold block">
-                        Total: ₹{(bid.price * bid.quantity)?.toLocaleString('en-IN')}
+                        {t.totalOrderValueLabel}: ₹{(bid.price * bid.quantity)?.toLocaleString('en-IN')}
                       </span>
                     </div>
                   </div>
@@ -249,21 +251,21 @@ export default function LotDetailsPage() {
                       <button
                         onClick={() => handleRejectBid(bid.id)}
                         disabled={!!actionLoading}
-                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition"
+                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition cursor-pointer"
                       >
-                        Reject
+                        {t.btnRejectOffer}
                       </button>
                       <button
                         onClick={() => handleAcceptBid(bid.id)}
                         disabled={!!actionLoading}
-                        className="px-5 py-2 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 rounded-xl text-xs font-black shadow-md shadow-amber-500/20 transition flex items-center gap-1.5"
+                        className="px-5 py-2 bg-gradient-to-r from-amber-400 to-yellow-500 hover:from-amber-300 hover:to-yellow-400 text-slate-950 rounded-xl text-xs font-black shadow-md shadow-amber-500/20 transition flex items-center gap-1.5 cursor-pointer"
                       >
                         {actionLoading === bid.id ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
                           <Check className="w-3.5 h-3.5" />
                         )}
-                        Accept & Finalize Deal
+                        {t.acceptAndFinalizeDeal}
                       </button>
                     </div>
                   )}

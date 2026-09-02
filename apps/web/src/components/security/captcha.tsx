@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useImperativeHandle, forwardRef } from 'react';
 import { api } from '../../lib/api';
+import { useLanguage } from '../../lib/language-context';
 import { RotateCw, ShieldCheck, AlertCircle } from 'lucide-react';
 
 export interface CaptchaHandle {
@@ -19,6 +20,7 @@ export const Captcha = forwardRef<CaptchaHandle, CaptchaProps>(function Captcha(
   { onCaptchaChange, error, disabled = false },
   ref,
 ) {
+  const { t } = useLanguage();
   const [captchaId, setCaptchaId] = useState<string>('');
   const [captchaImage, setCaptchaImage] = useState<string>('');
   const [captchaAnswer, setCaptchaAnswer] = useState<string>('');
@@ -39,8 +41,8 @@ export const Captcha = forwardRef<CaptchaHandle, CaptchaProps>(function Captcha(
       } else {
         throw new Error('Invalid CAPTCHA payload');
       }
-    } catch (err: any) {
-      setLoadError('Unable to load security verification. Please click refresh.');
+    } catch {
+      setLoadError(t.captchaFailed);
     } finally {
       setIsLoading(false);
     }
@@ -73,9 +75,9 @@ export const Captcha = forwardRef<CaptchaHandle, CaptchaProps>(function Captcha(
         <label className="block text-xs font-bold text-slate-700 flex items-center justify-between">
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5 text-amber-700" />
-            Security Verification
+            {t.captchaLabel}
           </span>
-          <span className="text-[10px] text-slate-400 font-normal">Case-insensitive</span>
+          <span className="text-[10px] text-slate-400 font-normal">{t.captchaCaseInsensitive}</span>
         </label>
 
         <div className="flex items-center gap-2 p-2 bg-amber-50/70 border border-amber-200 rounded-2xl">
@@ -84,17 +86,17 @@ export const Captcha = forwardRef<CaptchaHandle, CaptchaProps>(function Captcha(
             {isLoading ? (
               <div className="flex items-center gap-2 text-xs text-amber-800 font-bold animate-pulse">
                 <RotateCw className="w-4 h-4 animate-spin text-amber-600" />
-                <span>Generating security code...</span>
+                <span>{t.captchaGenerating}</span>
               </div>
             ) : loadError ? (
               <div className="text-[11px] text-rose-700 font-bold flex items-center gap-1">
                 <AlertCircle className="w-3.5 h-3.5" />
-                <span>Failed to load image</span>
+                <span>{loadError}</span>
               </div>
             ) : (
               <img
                 src={captchaImage}
-                alt="Security Verification CAPTCHA"
+                alt={t.captchaLabel}
                 className="max-h-12 w-auto object-contain select-none pointer-events-none rounded-lg"
                 draggable={false}
               />
@@ -106,8 +108,8 @@ export const Captcha = forwardRef<CaptchaHandle, CaptchaProps>(function Captcha(
             type="button"
             onClick={fetchCaptcha}
             disabled={isLoading || disabled}
-            title="Refresh Security Code"
-            aria-label="Refresh Security Code"
+            title={t.captchaRefreshTooltip}
+            aria-label={t.captchaRefreshTooltip}
             className="p-3 bg-amber-100 hover:bg-amber-200 active:bg-amber-300 text-amber-950 font-black rounded-xl border border-amber-300 shadow-sm transition transform active:scale-95 flex items-center justify-center shrink-0"
           >
             <RotateCw className={`w-5 h-5 text-amber-900 ${isLoading ? 'animate-spin' : ''}`} />
@@ -118,7 +120,7 @@ export const Captcha = forwardRef<CaptchaHandle, CaptchaProps>(function Captcha(
       {/* Answer Input */}
       <div>
         <label htmlFor="captcha-input" className="block text-xs font-bold text-slate-700 mb-1">
-          Enter the characters shown above
+          {t.captchaInputPrompt}
         </label>
         <input
           id="captcha-input"
@@ -128,7 +130,7 @@ export const Captcha = forwardRef<CaptchaHandle, CaptchaProps>(function Captcha(
           disabled={disabled || isLoading}
           value={captchaAnswer}
           onChange={handleInputChange}
-          placeholder="e.g. K7P4X"
+          placeholder={t.captchaPlaceholder}
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="characters"

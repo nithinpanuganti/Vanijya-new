@@ -19,9 +19,10 @@ export class LotsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new crop lot (Farmers only)' })
   @ApiResponse({ status: 201, description: 'Crop lot created and published' })
-  @ApiResponse({ status: 403, description: 'Forbidden. Only farmers can create lots' })
-  create(@CurrentUser('id') farmerId: string, @Body() dto: CreateCropLotDto) {
-    return this.lotsService.create(farmerId, dto);
+  @ApiResponse({ status: 403, description: 'Forbidden. Only approved farmers can create lots' })
+  create(@CurrentUser() user: any, @Body() dto: CreateCropLotDto) {
+    const farmerId = user?.id || user?.sub;
+    return this.lotsService.create(farmerId, dto, user);
   }
 
   @Get()

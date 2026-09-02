@@ -9,6 +9,18 @@ export enum UserRole {
   ADMIN = 'ADMIN',
 }
 
+export enum ApprovalStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
+
+export enum VerificationStatus {
+  PENDING = 'PENDING',
+  VERIFIED = 'VERIFIED',
+  REJECTED = 'REJECTED',
+}
+
 export enum CropLotStatus {
   OPEN = 'OPEN',
   BIDDING = 'BIDDING',
@@ -57,6 +69,13 @@ export enum AuditAction {
   BID_ACCEPTED = 'BID_ACCEPTED',
   BID_REJECTED = 'BID_REJECTED',
   PAYMENT_PAID = 'PAYMENT_PAID',
+  REGISTRATION_SUBMITTED = 'REGISTRATION_SUBMITTED',
+  REGISTRATION_APPROVED = 'REGISTRATION_APPROVED',
+  REGISTRATION_REJECTED = 'REGISTRATION_REJECTED',
+  PROFILE_UPDATED = 'PROFILE_UPDATED',
+  PROFILE_PHOTO_UPDATED = 'PROFILE_PHOTO_UPDATED',
+  LOCATION_UPDATED = 'LOCATION_UPDATED',
+  LOGIN = 'LOGIN',
 }
 
 export interface UserDTO {
@@ -68,8 +87,87 @@ export interface UserDTO {
   location?: string;
   district?: string;
   state?: string;
+  village?: string;
+  latitude?: number;
+  longitude?: number;
+  profilePhotoUrl?: string;
+  approvalStatus?: ApprovalStatus;
+  verificationStatus?: VerificationStatus;
   isVerified: boolean;
+  rejectionReason?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  // Farmer fields
+  primaryCrop?: string;
+  farmSize?: number;
+  kccNumber?: string;
+  apmcNumber?: string;
+  // Buyer fields
+  organizationName?: string;
+  contactPerson?: string;
+  businessType?: string;
+  gstin?: string;
+  fssaiNumber?: string;
+  warehouseLocation?: string;
   createdAt: string;
+  updatedAt?: string;
+}
+
+export interface PublicProfileDTO {
+  id: string;
+  name: string;
+  role: UserRole;
+  state?: string;
+  district?: string;
+  village?: string;
+  isVerified: boolean;
+  profilePhotoUrl?: string;
+}
+
+export interface ProfileCompletionDTO {
+  percentage: number;
+  missingFields: string[];
+  completedFields: string[];
+}
+
+export interface NotificationDTO {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  type: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface RegistrationRequestDTO {
+  id: string;
+  name: string;
+  role: UserRole;
+  phone?: string;
+  email?: string;
+  state?: string;
+  district?: string;
+  village?: string;
+  location?: string;
+  latitude?: number;
+  longitude?: number;
+  profilePhotoUrl?: string;
+  approvalStatus: ApprovalStatus;
+  verificationStatus: VerificationStatus;
+  rejectionReason?: string;
+  createdAt: string;
+  // Role specific metadata
+  primaryCrop?: string;
+  farmSize?: number;
+  kccNumber?: string;
+  apmcNumber?: string;
+  organizationName?: string;
+  contactPerson?: string;
+  businessType?: string;
+  gstin?: string;
+  fssaiNumber?: string;
+  warehouseLocation?: string;
 }
 
 export interface CropDTO {
@@ -174,6 +272,9 @@ export interface AuditLogDTO {
 export interface AdminDashboardStats {
   totalFarmers: number;
   totalBuyers: number;
+  pendingFarmers: number;
+  pendingBuyers: number;
+  pendingRegistrations: number;
   activeLots: number;
   activeBiddingLots: number;
   soldLots: number;
