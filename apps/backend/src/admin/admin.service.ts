@@ -198,11 +198,13 @@ export class AdminService {
       (u) => u.role === Role.FARMER || u.role === Role.BUYER,
     );
 
+    const targetStatus = status === 'VERIFIED' ? ApprovalStatus.APPROVED : status;
+
     if (role && role !== 'ALL') {
       users = users.filter((u) => u.role === role);
     }
-    if (status && status !== 'ALL') {
-      users = users.filter((u) => u.approvalStatus === status);
+    if (targetStatus && targetStatus !== 'ALL') {
+      users = users.filter((u) => u.approvalStatus === targetStatus);
     }
     if (state && state !== 'ALL') {
       users = users.filter((u) => u.state?.toLowerCase() === state.toLowerCase());
@@ -238,8 +240,12 @@ export class AdminService {
       location: u.location,
       latitude: u.latitude,
       longitude: u.longitude,
+      liveLocationLat: u.latitude,
+      liveLocationLng: u.longitude,
       profilePhotoUrl: u.profilePhotoUrl,
+      photoUrl: u.profilePhotoUrl,
       approvalStatus: u.approvalStatus,
+      status: u.approvalStatus === ApprovalStatus.APPROVED ? 'VERIFIED' : u.approvalStatus,
       verificationStatus: u.verificationStatus,
       isVerified: u.isVerified,
       rejectionReason: u.rejectionReason,
@@ -249,6 +255,7 @@ export class AdminService {
       farmSize: u.farmSize,
       kccNumber: u.kccNumber,
       apmcNumber: u.apmcNumber,
+      apmcRegistrationNumber: u.apmcNumber,
       organizationName: u.organizationName,
       contactPerson: u.contactPerson,
       businessType: u.businessType,
@@ -271,8 +278,10 @@ export class AdminService {
         role: { in: [Role.FARMER, Role.BUYER] },
       };
 
+      const targetStatus = status === 'VERIFIED' ? ApprovalStatus.APPROVED : status;
+
       if (role && role !== 'ALL') where.role = role;
-      if (status && status !== 'ALL') where.approvalStatus = status;
+      if (targetStatus && targetStatus !== 'ALL') where.approvalStatus = targetStatus;
       if (state && state !== 'ALL') where.state = { equals: state, mode: 'insensitive' };
       if (search && search.trim()) {
         const q = search.trim();
@@ -326,7 +335,14 @@ export class AdminService {
         },
       });
 
-      return users;
+      return users.map((u) => ({
+        ...u,
+        liveLocationLat: u.latitude,
+        liveLocationLng: u.longitude,
+        photoUrl: u.profilePhotoUrl,
+        apmcRegistrationNumber: u.apmcNumber,
+        status: u.approvalStatus === ApprovalStatus.APPROVED ? 'VERIFIED' : u.approvalStatus,
+      }));
     } catch (err) {
       return this.getFallbackRegistrations(query);
     }

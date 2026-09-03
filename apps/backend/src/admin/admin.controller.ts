@@ -58,6 +58,14 @@ export class AdminController {
     return this.adminService.approveUser(id, adminUser);
   }
 
+  @Patch('registrations/:id/approve')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Approve a farmer or buyer registration' })
+  @ApiResponse({ status: 200, description: 'User successfully approved' })
+  approveRegistration(@Param('id') id: string, @CurrentUser() adminUser: any) {
+    return this.adminService.approveUser(id, adminUser);
+  }
+
   @Patch('users/:id/reject')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Reject a farmer or buyer registration with a reason' })
@@ -65,9 +73,25 @@ export class AdminController {
   rejectUser(
     @Param('id') id: string,
     @Body('rejectionReason') rejectionReason: string,
+    @Body('reason') reason: string,
     @CurrentUser() adminUser: any,
   ) {
-    return this.adminService.rejectUser(id, rejectionReason, adminUser);
+    const finalReason = rejectionReason || reason || '';
+    return this.adminService.rejectUser(id, finalReason, adminUser);
+  }
+
+  @Patch('registrations/:id/reject')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Reject a farmer or buyer registration with a reason' })
+  @ApiResponse({ status: 200, description: 'User successfully rejected' })
+  rejectRegistration(
+    @Param('id') id: string,
+    @Body('rejectionReason') rejectionReason: string,
+    @Body('reason') reason: string,
+    @CurrentUser() adminUser: any,
+  ) {
+    const finalReason = rejectionReason || reason || '';
+    return this.adminService.rejectUser(id, finalReason, adminUser);
   }
 
   @Get('lots')

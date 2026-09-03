@@ -36,19 +36,26 @@ interface RegistrationUser {
   name: string;
   email?: string;
   role: 'FARMER' | 'BUYER' | 'ADMIN';
-  status: 'PENDING' | 'VERIFIED' | 'REJECTED';
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  status?: 'PENDING' | 'VERIFIED' | 'APPROVED' | 'REJECTED';
+  verificationStatus?: 'PENDING' | 'VERIFIED' | 'REJECTED';
   rejectionReason?: string;
   approvedBy?: string;
+  approvedAt?: string;
   state: string;
   district: string;
   village?: string;
   location?: string;
+  latitude?: number;
+  longitude?: number;
   liveLocationLat?: number;
   liveLocationLng?: number;
   photoUrl?: string;
+  profilePhotoUrl?: string;
   primaryCrop?: string;
   farmSize?: number;
   kccNumber?: string;
+  apmcNumber?: string;
   apmcRegistrationNumber?: string;
   organizationName?: string;
   contactPerson?: string;
@@ -99,17 +106,26 @@ export default function AdminRegistrationsPage() {
       if (roleFilter !== 'ALL') queryParams.append('role', roleFilter);
       if (statusFilter !== 'ALL') queryParams.append('status', statusFilter);
       if (searchQuery.trim()) queryParams.append('search', searchQuery.trim());
-      queryParams.append('sort', sortOrder);
+      queryParams.append('sortBy', sortOrder === 'desc' ? 'newest' : 'oldest');
 
-      const res = await api.get<{ users: RegistrationUser[]; stats: any }>(
-        `/admin/registrations?${queryParams.toString()}`,
-      );
+      const [res, statsRes] = await Promise.all([
+        api.get<any>(`/admin/registrations?${queryParams.toString()}`),
+        api.get<any>('/admin/dashboard').catch(() => null),
+      ]);
 
-      if (res && res.users) {
-        setRegistrations(res.users);
-        if (res.stats) {
-          setStats(res.stats);
-        }
+      const userList: RegistrationUser[] = Array.isArray(res) ? res : (res?.users || []);
+      setRegistrations(userList);
+
+      if (statsRes) {
+        setStats({
+          pendingFarmers: statsRes.pendingFarmers || 0,
+          pendingBuyers: statsRes.pendingBuyers || 0,
+          totalPending: statsRes.pendingRegistrations !== undefined ? statsRes.pendingRegistrations : ((statsRes.pendingFarmers || 0) + (statsRes.pendingBuyers || 0)),
+          approvedFarmers: statsRes.approvedFarmers || 0,
+          approvedBuyers: statsRes.approvedBuyers || 0,
+        });
+      } else if (res && !Array.isArray(res) && res.stats) {
+        setStats(res.stats);
       }
     } catch (err: any) {
       showToast(err.message || t.msgLoginFailed, 'error');
@@ -133,9 +149,9 @@ export default function AdminRegistrationsPage() {
     setIsProcessing(true);
     try {
       await api.patch(`/admin/registrations/${targetUser.id}/approve`, {});
-      showToast(t.msgUserApprovedSuccess, 'success');
+      showToast(t.msgUserApprovedSuccess || 'User approved successfully', 'success');
       if (selectedUser?.id === targetUser.id) {
-        setSelectedUser({ ...targetUser, status: 'VERIFIED' });
+        setSelectedUser({ ...targetUser, status: 'VERIFIED', approvalStatus: 'APPROVED' });
       }
       fetchRegistrations();
     } catch (err: any) {
@@ -149,20 +165,26 @@ export default function AdminRegistrationsPage() {
     e.preventDefault();
     if (!rejectModalUser) return;
     if (!rejectionReason.trim()) {
-      showToast(t.rejectionReasonLabel, 'error');
+      showToast(t.rejectionReasonLabel || 'Please provide a rejection reason.', 'error');
       return;
     }
 
     setIsProcessing(true);
     try {
       await api.patch(`/admin/registrations/${rejectModalUser.id}/reject`, {
+        rejectionReason: rejectionReason.trim(),
         reason: rejectionReason.trim(),
       });
-      showToast(t.msgUserRejectedSuccess, 'info');
+      showToast(t.msgUserRejectedSuccess || 'Registration rejected.', 'info');
       setRejectModalUser(null);
       setRejectionReason('');
       if (selectedUser?.id === rejectModalUser.id) {
-        setSelectedUser({ ...rejectModalUser, status: 'REJECTED', rejectionReason: rejectionReason.trim() });
+        setSelectedUser({
+          ...rejectModalUser,
+          status: 'REJECTED',
+          approvalStatus: 'REJECTED',
+          rejectionReason: rejectionReason.trim(),
+        });
       }
       fetchRegistrations();
     } catch (err: any) {
@@ -331,9 +353,15 @@ export default function AdminRegistrationsPage() {
           {registrations.map((applicant) => {
             const isFarmer = applicant.role === 'FARMER';
             const isBuyer = applicant.role === 'BUYER';
-            const isPending = applicant.status === 'PENDING';
-            const isVerified = applicant.status === 'VERIFIED';
-            const isRejected = applicant.status === 'REJECTED';
+            const isPending = applicant.approvalStatus === 'PENDING' || applicant.status === 'PENDING';
+            const isVerified =
+              applicant.approvalStatus === 'APPROVED' ||
+              applicant.status === 'VERIFIED' ||
+              applicant.status === 'APPROVED';
+            const isRejected = applicant.approvalStatus === 'REJECTED' || applicant.status === 'REJECTED';
+            const displayPhoto = applicant.photoUrl || applicant.profilePhotoUrl;
+            const lat = applicant.liveLocationLat ?? applicant.latitude;
+            const lng = applicant.liveLocationLng ?? applicant.longitude;
 
             return (
               <div
@@ -352,9 +380,9 @@ export default function AdminRegistrationsPage() {
                     <div className="flex items-center gap-3">
                       {/* Photo Thumbnail */}
                       <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
-                        {applicant.photoUrl ? (
+                        {displayPhoto ? (
                           <img
-                            src={applicant.photoUrl}
+                            src={displayPhoto}
                             alt={applicant.name}
                             className="w-full h-full object-cover"
                           />
@@ -418,7 +446,7 @@ export default function AdminRegistrationsPage() {
                       <span className="font-semibold text-slate-800">
                         📍 {applicant.village ? `${applicant.village}, ` : ''}{applicant.district}, {applicant.state}
                       </span>
-                      {applicant.liveLocationLat && applicant.liveLocationLng ? (
+                      {lat && lng ? (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-md">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
                           GPS Verified
@@ -510,9 +538,9 @@ export default function AdminRegistrationsPage() {
             {/* Profile Header & Picture */}
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 p-4 bg-amber-50/50 rounded-2xl border border-amber-200">
               <div className="w-24 h-24 rounded-2xl bg-amber-100 border border-amber-300 overflow-hidden shrink-0 shadow-md">
-                {selectedUser.photoUrl ? (
+                {(selectedUser.photoUrl || selectedUser.profilePhotoUrl) ? (
                   <img
-                    src={selectedUser.photoUrl}
+                    src={selectedUser.photoUrl || selectedUser.profilePhotoUrl}
                     alt={selectedUser.name}
                     className="w-full h-full object-cover"
                   />
@@ -537,14 +565,14 @@ export default function AdminRegistrationsPage() {
                 <div className="pt-1">
                   <span
                     className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border uppercase ${
-                      selectedUser.status === 'VERIFIED'
+                      (selectedUser.approvalStatus === 'APPROVED' || selectedUser.status === 'VERIFIED')
                         ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                        : selectedUser.status === 'REJECTED'
+                        : (selectedUser.approvalStatus === 'REJECTED' || selectedUser.status === 'REJECTED')
                         ? 'bg-rose-50 text-rose-800 border-rose-300'
                         : 'bg-amber-100 text-amber-950 border-amber-400'
                     }`}
                   >
-                    {selectedUser.status}
+                    {selectedUser.approvalStatus || selectedUser.status}
                   </span>
                 </div>
               </div>
@@ -570,11 +598,11 @@ export default function AdminRegistrationsPage() {
                     <span className="font-bold">{selectedUser.village}</span>
                   </div>
                 )}
-                {selectedUser.liveLocationLat && selectedUser.liveLocationLng && (
+                {(selectedUser.liveLocationLat ?? selectedUser.latitude) && (selectedUser.liveLocationLng ?? selectedUser.longitude) && (
                   <div className="col-span-2 pt-1 border-t border-slate-200">
                     <span className="text-slate-400 block text-[10px] font-bold">{t.liveGpsCoordsLabel}</span>
                     <span className="font-mono text-emerald-800 font-bold">
-                      {selectedUser.liveLocationLat.toFixed(6)}, {selectedUser.liveLocationLng.toFixed(6)}
+                      {(selectedUser.liveLocationLat ?? selectedUser.latitude)?.toFixed(6)}, {(selectedUser.liveLocationLng ?? selectedUser.longitude)?.toFixed(6)}
                     </span>
                   </div>
                 )}
@@ -602,7 +630,7 @@ export default function AdminRegistrationsPage() {
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[10px] font-bold">{t.apmcNumberLabel}</span>
-                    <span className="font-mono font-bold text-slate-900">{selectedUser.apmcRegistrationNumber || 'APMC-MH-00912'}</span>
+                    <span className="font-mono font-bold text-slate-900">{selectedUser.apmcRegistrationNumber || selectedUser.apmcNumber || 'APMC-MH-00912'}</span>
                   </div>
                 </div>
               </div>
@@ -656,7 +684,7 @@ export default function AdminRegistrationsPage() {
                 {t.commonClose}
               </button>
 
-              {selectedUser.status === 'PENDING' && (
+              {(selectedUser.approvalStatus === 'PENDING' || selectedUser.status === 'PENDING') && (
                 <>
                   <button
                     type="button"

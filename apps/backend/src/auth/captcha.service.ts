@@ -319,6 +319,13 @@ export class CaptchaService implements OnModuleDestroy {
   /**
    * Clean up expired challenges from the in-memory store.
    */
+  cleanupExpired(): number {
+    return this.cleanupExpiredChallenges();
+  }
+
+  /**
+   * Clean up expired challenges from the in-memory store.
+   */
   cleanupExpiredChallenges(): number {
     const now = Date.now();
     let count = 0;
